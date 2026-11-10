@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>タイピングキッチン | KAIRI_studio</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#11191e;color:#edf3ef;font-family:"Yu Gothic UI",Meiryo,sans-serif}main{width:min(calc(100% - 48px),1280px,calc((100svh - 245px)*2.5));min-width:760px;margin:0 auto}header{display:flex;align-items:center;justify-content:space-between;height:64px}h1{font-size:23px;margin:0}small,.muted{color:#aabcbf}small{font:700 11px monospace;letter-spacing:.18em}canvas{width:100%;display:block;border:1px solid #43565d;border-radius:8px 8px 0 0;background:#27383f}section{display:grid;grid-template-columns:145px 1fr 145px;align-items:center;text-align:center;background:#1d2a31;border:1px solid #43565d;border-top:0;border-radius:0 0 8px 8px;padding:12px 10px;min-height:132px}h2{margin:0;font-size:clamp(29px,4vw,48px);letter-spacing:.08em}#roman{font:bold 24px monospace;letter-spacing:.14em;color:#9eb2b7}#typed{color:#f7ce7b}#next{border-bottom:2px solid #f7ce7b;color:white}#key{width:250px;color:white;background:#11191e;border:1px solid #638089;border-radius:5px;padding:5px;text-align:center;margin-top:5px}#key:focus{outline:1px solid #f7ce7b}#key.bad{border-color:#ff7868;background:#482d2c}footer{display:flex;justify-content:space-between;padding:10px 0;font-size:12px;color:#aabcbf}strong{color:#f7ce7b}
+</style>
+<main>
+<header><div><small>KAIRI_STUDIO / PC GAME</small><h1>タイピングキッチン</h1></div><small>◆　厨房試作 / 01</small></header>
+<canvas id="kitchen" width="1200" height="480" aria-label="調理台が3段並ぶ厨房。手前の通路をウェイターが走ります。"></canvas>
+<section>
+<div><small>調理工程</small><br><strong id="stage"></strong></div>
+<div><h2 id="prompt"></h2><div id="roman"><span id="typed"></span><span id="next"></span><span id="rest"></span></div><input id="key" aria-label="ローマ字入力欄" placeholder="ここに半角英字で入力" autocomplete="off" spellcheck="false" inputmode="none" autofocus></div>
+<div><small>提供済み</small><br><strong id="served">00</strong> 皿</div>
+</section>
+<footer><span id="status" role="status">ローマ字を入力して調理開始</span><span>英数入力 ／ Enter 不要</span></footer>
+</main>
+<script src="game.js"></script>
+</html>
+
