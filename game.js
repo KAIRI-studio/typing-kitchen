@@ -95,85 +95,177 @@ function label(value,x,y,color="#c6d7d8",size=13) {
   ctx.font = `bold ${size}px "Yu Gothic UI", sans-serif`;
   ctx.fillText(value,x,y);
 }
-function steel(x,y,w,d) {
-  box(x+5,y+d,w-10,30,"#354951");
-  box(x+15,y+d+25,10,12,"#273840");
-  box(x+w-25,y+d+25,10,12,"#273840");
-  shape("#a0b0b4",x,y+d,x+18,y,x+w-18,y,x+w,y+d);
-  box(x,y+d,w,8,"#d1dbd9");
-  box(x+17,y+d+11,w-34,2,"#6f8389");
+const ink = "#273538";
+const steelFace = "#899a9e";
+const steelTop = "#c5cdca";
+const cream = "#f4ebd6";
+
+function line(color, width, ...points) {
+  ctx.beginPath();
+  ctx.moveTo(points[0], points[1]);
+  for (let i = 2; i < points.length; i += 2) ctx.lineTo(points[i], points[i + 1]);
+  ctx.lineWidth = width;
+  ctx.strokeStyle = color;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.stroke();
 }
+
+function steel(x, y, w, depth) {
+  for (const leg of [x + 19, x + w - 28]) {
+    box(leg, y + depth + 13, 9, 23, ink);
+    box(leg + 1, y + depth + 13, 3, 20, steelFace);
+  }
+  shape(ink, x - 2, y + depth, x + 19, y - 2, x + w - 19, y - 2, x + w + 2, y + depth);
+  shape(steelTop, x + 3, y + depth, x + 21, y, x + w - 21, y, x + w - 3, y + depth);
+  box(x - 2, y + depth, w + 4, 16, ink);
+  box(x, y + depth + 1, w, 10, steelFace);
+  box(x, y + depth + 1, w, 2, "#e2e6dc");
+}
+
 function background() {
-  box(0,0,1200,480,"#50646b");
-  box(0,0,1200,64,"#263940");
-  for(let x=0;x<1200;x+=60) box(x,0,1,64,"#42555b");
-  for(let y=0;y<64;y+=20) box(0,y,1200,1,"#42555b");
-  for(let y=68;y<410;y+=29) box(0,y,1200,1,"#41565d");
-  for(let x=-900;x<2200;x+=110) shape("#41565d",600+(x-600)*.47,66,602+(x-600)*.47,66,x+2,410,x,410);
-  box(0,63,1200,5,"#1a2b31");
-  for(const x of [80,260,805,985]) {
-    steel(x,37,135,22);
-    box(x+33,17,76,19,"#73888d");
-    box(x+38,21,66,3,"#adbdc0");
-    box(x+48,44,54,9,"#4b6168");
-    oval(x+60,48,7,3,"#a0b5b6");
-    oval(x+89,48,7,3,"#a0b5b6");
+  box(0, 0, 1200, 480, "#8b9691");
+  box(0, 0, 1200, 79, "#b4bcb5");
+  box(0, 4, 1200, 24, "#344144");
+  box(0, 4, 1200, 2, "#596866");
+  box(0, 27, 1200, 3, "#273538");
+  box(0, 76, 1200, 7, "#61716f");
+  for (let x = 18; x < 1200; x += 58) {
+    box(x, 30, 1, 45, "#a3afa8");
   }
-  label("KITCHEN   /   01",530,33,"#c4d3d3",16);
-  for(const x of [60,1035]) {
-    steel(x,167,105,34);
-    box(x+23,175,60,13,"#42565c");
-    box(x+23,175,60,2,"#dce5df");
+  box(0, 53, 1200, 1, "#a3afa8");
+  for (const y of [116, 161, 217, 280, 350, 409]) {
+    line("#7d8a85", 1, 0, y, 1200, y);
   }
-  box(48,342,1104,61,"#40585f");
-  for(let x=53;x<1150;x+=22) {
-    box(x,343,11,2,"#a39369");
-    box(x,402,11,2,"#a39369");
+  for (let x = -560; x < 1800; x += 126) {
+    const farX = 600 + (x - 600) * 0.58;
+    line("#7d8a85", 1, farX, 83, x, 410);
   }
-  label("厨房内  /  提供通路",54,358,"#c4d1ca",11);
+
+  box(65, 42, 150, 66, "#75827e");
+  box(58, 12, 148, 88, ink);
+  box(61, 15, 142, 80, "#9fadaa");
+  box(65, 19, 134, 16, "#657674");
+  box(65, 38, 65, 52, "#b7c1ba");
+  box(134, 38, 65, 52, "#adb9b3");
+  line("#e0e5dc", 1, 66, 39, 129, 39);
+  line(ink, 3, 120, 53, 120, 68);
+  line(ink, 3, 143, 53, 143, 68);
+  box(75, 24, 20, 6, "#263a38");
+  box(78, 26, 10, 2, "#a9ba99");
+
+  steel(966, 70, 176, 18);
+  shape("#687b78", 981, 81, 991, 73, 1117, 73, 1127, 81);
+  line("#3f5350", 3, 1052, 79, 1052, 55, 1041, 55);
+  box(963, 33, 184, 4, "#586967");
+  for (const x of [983, 1003, 1023]) {
+    oval(x, 30, 8, 3, "#7c9088");
+    oval(x, 28, 8, 3, "#dae1d5");
+  }
+
+  steel(77, 222, 126, 25);
+  shape("#ac9169", 104, 243, 116, 227, 159, 227, 166, 243);
+  shape("#ccb58d", 105, 240, 116, 227, 159, 227, 165, 240);
+  oval(176, 234, 11, 5, "#657771");
+  oval(176, 232, 11, 5, "#e1e6d8");
+  oval(176, 232, 7, 2, "#aabbaf");
+
+  steel(1006, 238, 116, 22);
+  box(1021, 214, 88, 32, ink);
+  box(1023, 216, 84, 27, "#879995");
+  box(1028, 221, 55, 16, "#4f6260");
+  line("#a9b9ae", 1, 1031, 224, 1080, 224);
+  oval(1094, 228, 3, 3, "#d0b57f");
+
+  box(0, 344, 1200, 66, "#697b75");
+  box(0, 344, 1200, 2, "#9aa59a");
+  box(0, 405, 1200, 2, "#9aa59a");
+  for (const x of [62, 1138]) {
+    line("#c3b386", 2, x - 8, 385, x, 378, x + 8, 385);
+    line("#c3b386", 2, x - 8, 377, x, 370, x + 8, 377);
+  }
 }
-function plate(x,y,order,step=3) {
-  const colors = ["#e8b252","#bd664a","#bc8b55","#995744"];
-  oval(x,y+3,25,10,"#42545a");
-  oval(x,y,24,10,"#e2ebe1");
-  oval(x,y,17,7,colors[order]);
-  oval(x-7,y+1,step===0?5:9,4,step===0?"#85a275":"#f3d084");
-  if(step>=2) {
-    oval(x+7,y-2,7,3,"#b44f3a");
-    oval(x+12,y-4,4,2,"#5e895e");
+
+function plate(x, y, order, step = 3) {
+  oval(x, y + 3, 26, 10, "#738581");
+  oval(x, y, 25, 10, ink);
+  oval(x, y - 1, 24, 9, "#e5e8db");
+  oval(x, y - 1, 17, 6, "#c1ccbe");
+
+  if (step === 0) {
+    for (const offset of [-8, 0, 8]) oval(x + offset, y - 1, 4, 2.5, "#9b793f");
+    oval(x + 4, y + 2, 3, 1.5, "#54724e");
+    return;
   }
+
+  const colors = ["#e1aa4c", "#be6646", "#ad7947", "#87503c"];
+  oval(x, y - 1, 13, 5.5, colors[order]);
+  if (order === 0) line("#a94834", 1.5, x - 7, y - 2, x - 2, y - 4, x + 2, y, x + 7, y - 2);
+  if (order === 1) line("#e6a267", 1.5, x - 8, y, x - 3, y - 4, x + 3, y, x + 8, y - 3);
+  if (order === 2) oval(x + 5, y - 1, 7, 4, cream);
+  if (order === 3) line("#bf8460", 1.5, x - 6, y - 2, x + 5, y - 4);
+  if (step >= 2) oval(x + 10, y + 2, 4, 1.8, "#557958");
 }
-function animal(x,y,kind,phase,direction) {
-  const fur = ["#85949a","#c68961","#aaa79a"][kind];
-  const suit = ["#dfe5dc","#d4ddd4","#22343e"][kind];
-  const bob = Math.abs(Math.sin(phase))*2;
-  const stride = Math.sin(phase)*6;
-  oval(x,y,20,5,"#30474f");
+
+function animal(x, y, kind, phase, direction) {
+  const fur = ["#858c8a", "#b87850", "#a69e8d"][kind];
+  const darkFur = ["#626d6d", "#804b39", "#72675f"][kind];
+  const jacket = kind === 2 ? "#354e4a" : cream;
+  const stride = Math.sin(phase) * 5;
+  oval(x, y + 2, 21, 4, "#465952");
+
   ctx.save();
-  ctx.translate(x,y);
-  ctx.scale(direction,1);
-  oval(-8+stride, -3, 7,4,"#223037");
-  oval(8-stride, -3, 7,4,"#223037");
-  ctx.translate(0,-bob);
-  shape(suit,-14,-29,13,-29,17,-7,-15,-7);
-  shape("#eff0df",-9,-28,9,-28,0,-14);
-  if(kind===2) shape("#ba765e",-8,-23,7,-18,7,-24,-8,-18);
-  if(kind===1) {
-    shape(fur,-21,-44,-19,-66,-4,-51);
-    shape(fur,9,-51,21,-65,23,-41);
+  ctx.translate(x, y);
+  ctx.scale(direction, 1);
+  line(ink, 6, -8, -13, -9 + stride, -4);
+  line(ink, 6, 8, -13, 9 - stride, -4);
+  oval(-9 + stride, -2, 7, 3, ink);
+  oval(9 - stride, -2, 7, 3, ink);
+  ctx.translate(0, -Math.abs(Math.sin(phase)) * 2);
+
+  shape(ink, -21, -29, -11, -38, 11, -38, 21, -27, 19, -9, -19, -9);
+  shape(jacket, -18, -27, -10, -36, 10, -36, 18, -26, 16, -12, -16, -12);
+  line(kind === 2 ? "#65827a" : "#c7bda5", 1.5, -12, -24, -14, -15);
+  line(kind === 2 ? "#65827a" : "#c7bda5", 1.5, 12, -24, 14, -15);
+  if (kind === 2) {
+    shape(cream, -9, -33, 10, -33, 1, -17);
+    shape("#b2664a", -7, -30, 7, -24, 7, -30, -7, -24);
+    box(8, -19, 5, 2, "#d3ba84");
   } else {
-    oval(-16,-50,8,8,fur);
-    oval(15,-50,8,8,fur);
+    line("#a89f8b", 1, 2, -29, 2, -14);
+    oval(7, -20, 1.5, 1.5, "#847d6d");
+    oval(7, -15, 1.5, 1.5, "#847d6d");
   }
-  oval(0,-39,22,16,fur);
-  oval(7,-32,12,7,"#e2d2b7");
-  box(-7,-42,6,2,"#26373b");
-  box(9,-42,6,2,"#26373b");
-  oval(9,-35,3,2,"#26373b");
-  if(kind<2) {
-    box(-13,-57,25,9,"#dce5dc");
-    oval(-5,-58,14,7,"#ecf0e6");
+
+  if (kind === 1) {
+    shape(ink, -22, -47, -21, -72, -5, -60, 8, -60, 23, -72, 23, -47);
+    shape(fur, -20, -47, -19, -68, -6, -57, 9, -57, 21, -68, 21, -47);
+    shape(darkFur, -18, -57, -18, -65, -10, -57, 13, -57, 19, -65, 19, -56);
+  } else {
+    for (const ear of [-16, 16]) {
+      oval(ear, -57, 9, 9, ink);
+      oval(ear, -57, 7, 7, fur);
+      oval(ear, -56, 4, 4, darkFur);
+    }
   }
+  oval(0, -47, 24, 17, ink);
+  oval(0, -47, 22, 15, fur);
+  shape(darkFur, -20, -46, -13, -40, -10, -35, -17, -38);
+  oval(7, -40, 13, 7, kind === 1 ? "#f1d5ae" : "#d7c7a9");
+  line(ink, 1.8, -10, -49, -4, -48);
+  line(ink, 1.8, 9, -48, 15, -49);
+  oval(11, -43, 3, 1.8, ink);
+  line(ink, 1, 10, -38, 15, -38);
+  if (kind < 2) {
+    box(-13, -65, 27, 10, ink);
+    oval(-7, -65, 11, 8, ink);
+    oval(5, -67, 11, 8, ink);
+    oval(-7, -65, 9, 6, cream);
+    oval(5, -67, 9, 6, cream);
+    box(-11, -66, 23, 9, cream);
+    box(-11, -59, 23, 2, "#c4bbab");
+  }
+
   ctx.restore();
 }
 
@@ -209,13 +301,33 @@ function draw(time) {
   background();
   tables.forEach(({y},i) => {
     const active = state.step === i;
-    steel(365,y,470,30);
-    box(398,y+9,95,15,i===1?"#364b52":"#74898d");
-    if(i===1) [423,466].forEach(x=>oval(x,y+16,12,5,"#1f3037"));
-    box(700,y+8,90,17,"#7e9295");
-    box(705,y+11,80,2,"#b1c2bf");
-    box(376,y+42,7,13,active?"#f0bf69":"#6a8388");
-    label(`0${i+1}  ${stages[i]}`,395,y+53,active?"#f7ce7b":"#cedbd9",14);
+    box(390, y + 54, 420, 5, "#75817b");
+    steel(365, y, 470, 29);
+    shape("#a4b1ab", 392, y + 20, 405, y + 6, 483, y + 6, 492, y + 20);
+    if (i === 1) {
+      for (const x of [420, 464]) {
+        oval(x, y + 14, 14, 5.5, "#4d5e5f");
+        oval(x, y + 14, 9, 3.5, ink);
+      }
+    }
+    if (i === 0) {
+      shape("#cbb48a", 706, y + 21, 719, y + 6, 761, y + 6, 773, y + 21);
+      line("#e1ccaa", 1, 714, y + 19, 764, y + 19);
+    }
+    if (i === 1) {
+      line(ink, 4, 753, y + 12, 774, y + 7);
+      oval(735, y + 16, 23, 7, "#506361");
+      oval(735, y + 14, 19, 5, ink);
+    }
+    if (i === 2) {
+      for (const x of [722, 753]) {
+        oval(x, y + 17, 17, 6, "#879b94");
+        oval(x, y + 15, 17, 6, "#e1e6da");
+        oval(x, y + 15, 12, 4, "#b7c8bf");
+      }
+    }
+    box(385, y + 33, 88, 19, active ? "#c59b59" : "#445653");
+    label(`0${i+1}  ${stages[i]}`, 393, y + 46, active ? ink : "#e0e6da", 12);
     if(active && !state.delivery?.carrying) plate(pickupX,y+14,state.order,i);
     else oval(pickupX,y+15,24,9,"#899ca0");
   });
@@ -224,23 +336,21 @@ function draw(time) {
     const x=(i===0?235:965)+Math.sin(p)*51;
     const y=141+Math.cos(p)*9;
     animal(x,y,i,time/100,Math.cos(p)>0?1:-1);
-    label(i===0?"ベテラン":"弟子",x-22,y+16,"#e1e9e1",11);
   }
   animal(motion.x,lane.y,2,motion.phase,motion.direction);
   if(state.delivery?.carrying) plate(motion.x+motion.direction*23,lane.y-24,state.order);
-  box(0,counterY,1200,34,"#b4c3c4");
-  box(0,counterY,1200,3,"#e3eae3");
-  box(0,444,1200,36,"#2d4149");
-  box(0,444,1200,5,"#71868a");
-  label("提供カウンター",53,468,"#e1e9df",14);
+  box(0, counterY, 1200, 34, "#b9c4be");
+  box(0, counterY, 1200, 2, "#e8eadf");
+  box(0, 441, 1200, 5, "#829390");
+  box(0, 446, 1200, 34, "#334744");
+  box(0, 446, 1200, 2, ink);
+  label("提供カウンター", 53, 468, "#e3e7d9", 13);
   slots.forEach((x,i)=>{
     const item=state.served-1-((state.served-1-i+slots.length)%slots.length);
     if(item>=0) plate(x,426,item%orders.length);
-    else oval(x,427,24,9,"#a1b2b4");
+    else oval(x, 427, 23, 7, "#aab8b2");
   });
-  label("SERVICE",1090,468,"#aebec0",12);
   requestAnimationFrame(draw);
 }
 showPrompt();
 requestAnimationFrame(draw);
-
