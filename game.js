@@ -18,9 +18,10 @@ const waiterHome = { x: 1048, y: 542 };
 const pickup = { x: 681, y: 506 };
 const deliveryHandX = 53;
 const waiterHeight = 221;
-const counterY = 573;
-const servingSize = { width: 76, height: 31 };
-const slots = [907, 1039, 1171, 1303];
+const counterTop = 562;
+const counterY = 611;
+const platedDish = stations[2];
+const slots = [802, 961, 1120, 1279];
 const state = { order: 0, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null };
 let art;
 let time = 0;
@@ -125,6 +126,10 @@ function drawFood(order, stage, x, y, width, height) {
   drawSprite(art.food, foodFrames[order * 3 + stage], x, y, width, height);
 }
 
+function drawPlatedDish(order, x, y) {
+  drawFood(order, 2, x, y, platedDish.width, platedDish.height);
+}
+
 function shadow(x, y, width) {
   ctx.fillStyle = "rgba(24,25,26,.33)";
   ctx.beginPath();
@@ -184,7 +189,7 @@ function drawStations(showFinished) {
 
   const station = stations[state.step];
   if (state.deliveryTime !== null) {
-    if (showFinished) drawFood(state.order, 2, station.x, station.y, station.width, station.height);
+    if (showFinished) drawPlatedDish(state.order, station.x, station.y);
     return;
   }
 
@@ -253,18 +258,16 @@ function drawWaiter(elapsed) {
   const amount = progress(elapsed - deliveryPhases.carry, deliveryPhases.place - deliveryPhases.carry);
   const slot = slots[state.served % slots.length];
   const fromPickup = progress(elapsed - deliveryPhases.approach, 170);
-  const handX = mix(stations[2].x, pose.x + deliveryHandX, fromPickup);
-  const handY = mix(stations[2].y, pose.y - waiterHeight * .57, fromPickup);
-  const width = mix(mix(stations[2].width, 83, fromPickup), servingSize.width, amount);
-  const height = mix(mix(stations[2].height, 56, fromPickup), servingSize.height, amount);
-  drawFood(state.order, 2, mix(handX, slot, amount), mix(handY, counterY, amount), width, height);
+  const handX = mix(platedDish.x, pose.x + deliveryHandX, fromPickup);
+  const handY = mix(platedDish.y, pose.y - waiterHeight * .57, fromPickup);
+  drawPlatedDish(state.order, mix(handX, slot, amount), mix(handY, counterY, amount));
 }
 
 function drawCounter(elapsed) {
   const inDelivery = elapsed !== null && elapsed >= deliveryPhases.place;
   const total = state.served + Number(inDelivery);
   for (let item = Math.max(0, total - slots.length); item < total; item++) {
-    drawFood(item % orders.length, 2, slots[item % slots.length], counterY, servingSize.width, servingSize.height);
+    drawPlatedDish(item % orders.length, slots[item % slots.length], counterY);
   }
 }
 
@@ -283,7 +286,8 @@ function draw(timestamp) {
     showPrompt();
   }
   const delivery = state.deliveryTime === null ? null : time - state.deliveryTime;
-  ctx.drawImage(art.kitchen, 0, 0, ui.kitchen.width, ui.kitchen.height);
+  ctx.drawImage(art.kitchen, 0, 0);
+  ctx.drawImage(art.counter, 0, counterTop);
   drawStations(delivery === null || delivery < deliveryPhases.approach);
   drawChef(chefs[0], state.step !== 1 && delivery === null);
   drawChef(chefs[1], state.step === 1 && delivery === null);
@@ -301,7 +305,7 @@ const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3
 
 const chefFrames = [[3, 3, 159, 254], [263, 3, 130, 254], [523, 3, 193, 254], [3, 263, 148, 254], [263, 263, 118, 254], [523, 263, 170, 254]];
 
-const files = ["kitchen", "actors", "food", "chefs"];
+const files = ["kitchen", "actors", "food", "chefs", "counter"];
 Promise.all(files.map(name => loadImage(`assets/${name}.webp`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
   ui.status.textContent = "ローマ字を入力して調理開始";

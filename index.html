@@ -8,11 +8,11 @@
 * { box-sizing: border-box; }
 :root { color-scheme: dark; --gold: #edbf84; --soft: #b4b9b6; }
 body { margin: 0; background: #171a1b; color: #f1ebe0; font-family: "Yu Gothic UI", Meiryo, sans-serif; }
-main { width: min(calc(100% - 48px), 1320px, calc((100svh - 235px) * 2.4)); min-width: 720px; margin: 0 auto; }
+main { width: min(calc(100% - 48px), 1320px, calc((100svh - 235px) * 2.14)); min-width: 720px; margin: 0 auto; }
 header { display: flex; justify-content: space-between; align-items: baseline; padding: 15px 0 11px; }
 h1 { font-size: 20px; margin: 0; }
 .brand { color: var(--soft); font: 12px ui-monospace, monospace; letter-spacing: .13em; }
-canvas { display: block; width: 100%; aspect-ratio: 12 / 5; border: 1px solid #515654; border-radius: 7px 7px 0 0; background: #343838; }
+canvas { display: block; width: 100%; aspect-ratio: 15 / 7; border: 1px solid #515654; border-radius: 7px 7px 0 0; background: #343838; }
 .console { display: grid; grid-template-columns: minmax(158px, 1fr) 2fr minmax(110px, 1fr); align-items: center; gap: 12px; min-height: 128px; padding: 10px 24px; background: #232729; border: 1px solid #515654; border-top: 0; border-radius: 0 0 7px 7px; }
 .order { margin: 3px 0 10px; font-size: 17px; }
 .caption { color: var(--soft); font-size: 11px; font-weight: bold; letter-spacing: .1em; }
@@ -43,7 +43,7 @@ footer { display: flex; justify-content: space-between; padding: 8px 0; color: v
 <body>
 <main>
   <header><h1>タイピングキッチン</h1><span class="brand">KAIRI_STUDIO</span></header>
-  <canvas id="kitchen" width="1440" height="600" aria-label="奥から仕込み、加熱、盛り付けの調理台が並ぶ厨房"></canvas>
+  <canvas id="kitchen" width="1440" height="672" aria-label="奥から仕込み、加熱、盛り付けの調理台が並ぶ厨房"></canvas>
   <section class="console" aria-label="タイピング">
     <div><div class="caption">注文</div><h2 class="order" id="order"></h2><strong id="stage"></strong></div>
     <div class="entry"><h2 id="prompt"></h2><div id="roman" aria-hidden="true"><span id="typed"></span><span id="next"></span><span id="rest"></span></div>
@@ -53,6 +53,6 @@ footer { display: flex; justify-content: space-between; padding: 8px 0; color: v
   </section>
   <footer><span id="status" role="status">厨房を準備しています…</span><span>PCの英数キーで入力</span></footer>
 </main>
-<script src="game.js?v=chef-motion"></script>
+<script src="game.js?v=wide-counter"></script>
 </body>
 </html>
