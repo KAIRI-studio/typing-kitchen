@@ -15,7 +15,9 @@ const stations = [
   { x: 728, y: 365, width: 140, height: 85, labelX: 480, labelY: 376 },
 ];
 const waiterHome = { x: 1048, y: 542 };
-const pickup = { x: 691, y: 491 };
+const pickup = { x: 681, y: 506 };
+const deliveryHandX = 53;
+const waiterHeight = 221;
 const counterY = 573;
 const servingSize = { width: 76, height: 31 };
 const slots = [907, 1039, 1171, 1303];
@@ -23,6 +25,15 @@ const state = { order: 0, step: 0, typed: "", served: 0, stageTime: 0, deliveryT
 let art;
 let time = 0;
 let flash;
+const chefs = [
+  { x: 340, y: 326, height: 202, direction: 1, frame: 0, idle: 0, move: null },
+  { x: 1152, y: 324, height: 225, direction: -1, frame: 3, idle: 1, move: null },
+];
+const chefStations = [
+  [{ x: 459, y: 225 }, { x: 1152, y: 324 }],
+  [{ x: 373, y: 312 }, { x: 976, y: 324 }],
+  [{ x: 411, y: 428 }, { x: 1070, y: 303 }],
+];
 
 function showPrompt() {
   ui.order.textContent = orders[state.order][0];
@@ -66,6 +77,7 @@ ui.key.addEventListener("keydown", event => {
   if (state.step < 2) {
     state.step++;
     state.stageTime = time;
+    cueChefs(state.step);
     ui.status.textContent = state.step === 1 ? "フライパンで加熱中" : "お皿に盛り付け中";
     showPrompt();
     return;
@@ -120,10 +132,44 @@ function shadow(x, y, width) {
   ctx.fill();
 }
 
-function drawChef(frame, x, y, height, active) {
-  shadow(x, y - 3, 28);
-  const rock = active ? Math.sin(time / 125) * 2 : 0;
-  drawSprite(art.actors, actorFrames[frame], x + rock, y, 145, height - Math.abs(rock), 1, 1);
+function chefPosition(chef) {
+  if (!chef.move) return { x: chef.x, y: chef.y, moving: false };
+  const { from, to, start, duration } = chef.move;
+  const amount = progress(time - start, duration);
+  return { x: mix(from.x, to.x, amount), y: mix(from.y, to.y, amount), moving: amount < 1 };
+}
+
+function cueChefs(stage) {
+  for (const [index, chef] of chefs.entries()) {
+    const from = chefPosition(chef);
+    const to = chefStations[stage][index];
+    const distance = Math.hypot(to.x - from.x, to.y - from.y);
+    chef.move = { from, to, start: time, duration: Math.max(1, distance * 3.1) };
+  }
+}
+
+function drawChef(chef, active) {
+  const { x, y, moving } = chefPosition(chef);
+  const duration = time - (chef.move?.start ?? time);
+  const walkingDirection = Math.sign((chef.move?.to.x ?? x) - (chef.move?.from.x ?? x)) || chef.direction;
+  const height = chef.height + (y - 320) * .12;
+  shadow(x, y - 3, chef.idle === 0 ? 34 : 28);
+  if (moving || active) {
+    const cycle = Math.floor(duration / 130) % 4;
+    const frame = moving ? chef.frame + [0, 1, 0, 1][cycle] : chef.frame + 2;
+    const direction = moving ? walkingDirection * chef.direction : 1;
+    ctx.save();
+    ctx.translate(x, y);
+    if (active && !moving) {
+      const motion = Math.sin(duration / 118);
+      ctx.rotate(chef.direction * motion * .026);
+      ctx.scale(1, 1 + motion * .013);
+    }
+    drawSprite(art.chefs, chefFrames[frame], 0, 0, 190, height, direction, 1);
+    ctx.restore();
+  } else {
+    drawSprite(art.actors, actorFrames[chef.idle], x, y, 190, height, 1, 1);
+  }
 }
 
 function drawStations(showFinished) {
@@ -154,7 +200,8 @@ function drawStations(showFinished) {
     drawFood(state.order, state.step, station.x, station.y + (1 - amount) * 8, station.width, station.height);
     ctx.restore();
   } else {
-    drawFood(state.order, state.step, station.x, station.y, station.width, station.height);
+    const panMotion = state.step === 1 ? Math.sin(time / 108) * 2.5 : 0;
+    drawFood(state.order, state.step, station.x + panMotion, station.y, station.width, station.height);
   }
 
   if (state.step === 1) {
@@ -186,13 +233,13 @@ function waiterPose(elapsed) {
   }
   if (elapsed < deliveryPhases.carry) {
     const amount = progress(elapsed - deliveryPhases.approach, deliveryPhases.carry - deliveryPhases.approach);
-    return { x: mix(pickup.x, destination - 38, amount), y: mix(pickup.y, waiterHome.y, amount), direction: 1, walk: true, hands: true };
+    return { x: mix(pickup.x, destination - deliveryHandX, amount), y: mix(pickup.y, waiterHome.y, amount), direction: 1, walk: true, hands: true };
   }
   if (elapsed < deliveryPhases.place) {
-    return { x: destination - 38, y: waiterHome.y, direction: 1, walk: false, hands: true };
+    return { x: destination - deliveryHandX, y: waiterHome.y, direction: 1, walk: false, hands: true };
   }
   const amount = progress(elapsed - deliveryPhases.place, deliveryPhases.reset - deliveryPhases.place);
-  return { x: mix(destination - 38, waiterHome.x, amount), y: waiterHome.y, direction: destination - 38 > waiterHome.x ? -1 : 1, walk: true, hands: false };
+  return { x: mix(destination - deliveryHandX, waiterHome.x, amount), y: waiterHome.y, direction: destination - deliveryHandX > waiterHome.x ? -1 : 1, walk: true, hands: false };
 }
 
 function drawWaiter(elapsed) {
@@ -200,14 +247,14 @@ function drawWaiter(elapsed) {
   shadow(pose.x, pose.y - 3, 32);
   const walkFrames = [3, 4, 5, 4];
   const frame = pose.walk ? walkFrames[Math.floor(time / 115) % walkFrames.length] : (pose.hands ? 4 : 2);
-  drawSprite(art.actors, actorFrames[frame], pose.x, pose.y, 132, 151, pose.direction, 1);
+  drawSprite(art.actors, actorFrames[frame], pose.x, pose.y, 185, waiterHeight, pose.direction, 1);
 
   if (elapsed === null || elapsed < deliveryPhases.approach || elapsed >= deliveryPhases.place) return;
   const amount = progress(elapsed - deliveryPhases.carry, deliveryPhases.place - deliveryPhases.carry);
   const slot = slots[state.served % slots.length];
   const fromPickup = progress(elapsed - deliveryPhases.approach, 170);
-  const handX = mix(stations[2].x, pose.x + 36, fromPickup);
-  const handY = mix(stations[2].y, pose.y - 84, fromPickup);
+  const handX = mix(stations[2].x, pose.x + deliveryHandX, fromPickup);
+  const handY = mix(stations[2].y, pose.y - waiterHeight * .57, fromPickup);
   const width = mix(mix(stations[2].width, 83, fromPickup), servingSize.width, amount);
   const height = mix(mix(stations[2].height, 56, fromPickup), servingSize.height, amount);
   drawFood(state.order, 2, mix(handX, slot, amount), mix(handY, counterY, amount), width, height);
@@ -230,6 +277,7 @@ function draw(timestamp) {
     state.step = 0;
     state.stageTime = time;
     state.deliveryTime = null;
+    cueChefs(0);
     ui.served.textContent = String(state.served).padStart(2, "0");
     ui.status.textContent = "次の注文をどうぞ";
     showPrompt();
@@ -237,8 +285,8 @@ function draw(timestamp) {
   const delivery = state.deliveryTime === null ? null : time - state.deliveryTime;
   ctx.drawImage(art.kitchen, 0, 0, ui.kitchen.width, ui.kitchen.height);
   drawStations(delivery === null || delivery < deliveryPhases.approach);
-  drawChef(0, 347, 313, 207, state.step === 0 && delivery === null);
-  drawChef(1, 1167, 307, 238, state.step === 1 && delivery === null);
+  drawChef(chefs[0], state.step !== 1 && delivery === null);
+  drawChef(chefs[1], state.step === 1 && delivery === null);
   drawWaiter(delivery);
   drawCounter(delivery);
   if (delivery !== null && delivery >= deliveryPhases.place) {
@@ -251,12 +299,18 @@ const actorFrames = [[3, 3, 137, 254], [263, 3, 110, 254], [523, 3, 81, 254], [3
 
 const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3, 193, 184, 94], [193, 193, 184, 143], [383, 193, 184, 117], [3, 383, 184, 94], [193, 383, 184, 138], [383, 383, 184, 115], [3, 573, 184, 92], [193, 573, 184, 139], [383, 573, 184, 126]];
 
-const files = ["kitchen", "actors", "food"];
+const chefFrames = [[3, 3, 159, 254], [263, 3, 130, 254], [523, 3, 193, 254], [3, 263, 148, 254], [263, 263, 118, 254], [523, 263, 170, 254]];
+
+const files = ["kitchen", "actors", "food", "chefs"];
 Promise.all(files.map(name => loadImage(`assets/${name}.webp`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
   ui.status.textContent = "ローマ字を入力して調理開始";
   showPrompt();
-  requestAnimationFrame(draw);
+  requestAnimationFrame(timestamp => {
+    time = timestamp;
+    cueChefs(state.step);
+    draw(timestamp);
+  });
 }).catch(() => {
   ui.status.textContent = "厨房の画像を読み込めませんでした。ページを開き直してください。";
 });
