@@ -16,8 +16,8 @@ const stations = [
 ];
 const waiterHome = { x: 1048, y: 542 };
 const pickup = { x: 681, y: 506 };
-const deliveryHandX = 53;
-const waiterHeight = 221;
+const deliveryHandX = 44;
+const waiterHeight = 185;
 const counterTop = 562;
 const counterY = 611;
 const platedDish = stations[2];
@@ -27,8 +27,8 @@ let art;
 let time = 0;
 let flash;
 const chefs = [
-  { x: 340, y: 326, height: 202, direction: 1, frame: 0, idle: 0, move: null },
-  { x: 1152, y: 324, height: 225, direction: -1, frame: 3, idle: 1, move: null },
+  { x: 340, y: 326, height: 163, direction: 1, frame: 0, move: null },
+  { x: 1152, y: 324, height: 177, direction: -1, frame: 3, move: null },
 ];
 const chefStations = [
   [{ x: 459, y: 225 }, { x: 1152, y: 324 }],
@@ -158,10 +158,10 @@ function drawChef(chef, active) {
   const duration = time - (chef.move?.start ?? time);
   const walkingDirection = Math.sign((chef.move?.to.x ?? x) - (chef.move?.from.x ?? x)) || chef.direction;
   const height = chef.height + (y - 320) * .12;
-  shadow(x, y - 3, chef.idle === 0 ? 34 : 28);
+  shadow(x, y - 3, chef.frame === 0 ? 34 : 28);
   if (moving || active) {
     const cycle = Math.floor(duration / 130) % 4;
-    const frame = moving ? chef.frame + [0, 1, 0, 1][cycle] : chef.frame + 2;
+    const frame = moving ? chef.frame + [1, 0, 1, 0][cycle] : chef.frame + 2;
     const direction = moving ? walkingDirection * chef.direction : 1;
     ctx.save();
     ctx.translate(x, y);
@@ -170,10 +170,10 @@ function drawChef(chef, active) {
       ctx.rotate(chef.direction * motion * .026);
       ctx.scale(1, 1 + motion * .013);
     }
-    drawSprite(art.chefs, chefFrames[frame], 0, 0, 190, height, direction, 1);
+    drawSprite(art.characters, characterFrames[frame], 0, 0, 190, height, direction, 1);
     ctx.restore();
   } else {
-    drawSprite(art.actors, actorFrames[chef.idle], x, y, 190, height, 1, 1);
+    drawSprite(art.characters, characterFrames[chef.frame], x, y, 190, height, 1, 1);
   }
 }
 
@@ -250,16 +250,16 @@ function waiterPose(elapsed) {
 function drawWaiter(elapsed) {
   const pose = waiterPose(elapsed);
   shadow(pose.x, pose.y - 3, 32);
-  const walkFrames = [3, 4, 5, 4];
-  const frame = pose.walk ? walkFrames[Math.floor(time / 115) % walkFrames.length] : (pose.hands ? 4 : 2);
-  drawSprite(art.actors, actorFrames[frame], pose.x, pose.y, 185, waiterHeight, pose.direction, 1);
+  const walkFrames = [7, 8];
+  const frame = pose.walk ? walkFrames[Math.floor(time / 115) % walkFrames.length] : (pose.hands ? 8 : 6);
+  drawSprite(art.characters, characterFrames[frame], pose.x, pose.y, 185, waiterHeight, pose.direction, 1);
 
   if (elapsed === null || elapsed < deliveryPhases.approach || elapsed >= deliveryPhases.place) return;
   const amount = progress(elapsed - deliveryPhases.carry, deliveryPhases.place - deliveryPhases.carry);
   const slot = slots[state.served % slots.length];
   const fromPickup = progress(elapsed - deliveryPhases.approach, 170);
   const handX = mix(platedDish.x, pose.x + deliveryHandX, fromPickup);
-  const handY = mix(platedDish.y, pose.y - waiterHeight * .57, fromPickup);
+  const handY = mix(platedDish.y, pose.y - waiterHeight * .36, fromPickup);
   drawPlatedDish(state.order, mix(handX, slot, amount), mix(handY, counterY, amount));
 }
 
@@ -299,14 +299,12 @@ function draw(timestamp) {
   requestAnimationFrame(draw);
 }
 
-const actorFrames = [[3, 3, 137, 254], [263, 3, 110, 254], [523, 3, 81, 254], [3, 263, 162, 254], [263, 263, 132, 254], [523, 263, 168, 254]];
+const characterFrames = [[4, 4, 199, 252], [264, 4, 200, 252], [524, 4, 204, 252], [4, 264, 184, 252], [264, 264, 194, 252], [524, 264, 196, 252], [4, 524, 178, 252], [264, 524, 178, 252], [524, 524, 180, 252]];
 
-const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3, 193, 184, 94], [193, 193, 184, 143], [383, 193, 184, 117], [3, 383, 184, 94], [193, 383, 184, 138], [383, 383, 184, 115], [3, 573, 184, 92], [193, 573, 184, 139], [383, 573, 184, 126]];
+const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3, 193, 184, 94], [193, 193, 184, 143], [383, 193, 184, 117], [3, 383, 184, 94], [193, 383, 184, 138], [383, 383, 184, 115], [3, 573, 184, 144], [193, 573, 184, 146], [383, 573, 184, 130]];
 
-const chefFrames = [[3, 3, 159, 254], [263, 3, 130, 254], [523, 3, 193, 254], [3, 263, 148, 254], [263, 263, 118, 254], [523, 263, 170, 254]];
-
-const files = ["kitchen", "actors", "food", "chefs", "counter"];
-Promise.all(files.map(name => loadImage(`assets/${name}.webp`))).then(images => {
+const files = ["kitchen", "characters", "food", "counter"];
+Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
   ui.status.textContent = "ローマ字を入力して調理開始";
   showPrompt();
@@ -318,3 +316,4 @@ Promise.all(files.map(name => loadImage(`assets/${name}.webp`))).then(images => 
 }).catch(() => {
   ui.status.textContent = "厨房の画像を読み込めませんでした。ページを開き直してください。";
 });
+
