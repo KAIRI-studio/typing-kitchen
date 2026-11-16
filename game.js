@@ -8,7 +8,7 @@ const orders = [
   ["カレーライス", ["じゃがいも", "jagaimo", "zyagaimo"], ["にこむ", "nikomu"], ["カレーライス", "kare-raisu"]],
   ["ハンバーグ", ["ひきにく", "hikiniku"], ["やきあげる", "yakiageru"], ["デミグラス", "demigurasu"]],
 ];
-const trialOrders = new Map([["curry", 2], ["hamburg", 3]]);
+const trialOrders = new Map([["omurice", 0], ["napolitan", 1], ["curry", 2], ["hamburg", 3]]);
 const firstOrder = trialOrders.get(new URLSearchParams(window.location.search).get("order")) ?? 0;
 const stages = ["仕込み", "加熱", "盛り付け"];
 const stations = [
@@ -16,6 +16,20 @@ const stations = [
   { x: 728, y: 223, width: 151, height: 90, labelX: 503, labelY: 238 },
   { x: 728, y: 365, width: 140, height: 85, labelX: 480, labelY: 376 },
 ];
+// Table silhouettes follow the artwork, including the front rails and legs.
+const tableLayers = [
+  { depth: 181, outline: [[514, 69], [888, 69], [908, 149], [907, 157], [901, 158], [898, 181], [888, 181], [889, 158], [519, 158], [515, 181], [506, 181], [504, 158], [496, 157], [496, 146]] },
+  { depth: 311, outline: [[490, 183], [915, 183], [935, 274], [936, 282], [929, 284], [928, 311], [917, 311], [917, 284], [496, 284], [495, 311], [484, 311], [481, 284], [470, 282], [470, 272]] },
+  { depth: 477, outline: [[461, 312], [942, 312], [965, 408], [965, 418], [958, 419], [952, 475], [938, 477], [939, 460], [466, 460], [465, 477], [452, 476], [448, 419], [441, 417], [441, 406]] },
+];
+
+const mishaps = [
+  { messages: [["たまねぎが散った！", "たまごが跳ねた！"], ["卵が焼けすぎそう！", "卵のふちが焦げてきた！"], ["ケチャップが跳ねた！", "ケチャップが皿のふちまで飛んだ！"]], prep: ["#eee0bf", "#f3b855"], plate: "#b43c29", shape: "drop" },
+  { messages: [["ピーマンが飛び散った！", "ピーマンがまな板からこぼれた！"], ["麺がフライパンから跳ねた！", "麺が鍋肌にくっついて煙が出た！"], ["麺が皿からはみ出した！", "ナポリタンが皿のふちまで滑った！"]], prep: ["#6c8c44", "#b6c46d"], plate: "#d99148", shape: "strand" },
+  { messages: [["じゃがいもが転がった！", "じゃがいもがまな板から落ちそう！"], ["鍋が泡立ってきた", "カレーが吹きこぼれた！"], ["ルーがご飯にかかりすぎた！", "ルーが皿のふちまで流れた！"]], prep: ["#e9c488", "#f9e2af"], plate: "#9e5c2c", shape: "pool" },
+  { messages: [["ひき肉が形を崩した！", "ひき肉と玉ねぎが飛び散った！"], ["煙が出てきた", "ハンバーグが焦げはじめた！"], ["デミグラスソースが跳ねた！", "付け合わせまでずれた！"]], prep: ["#b87166", "#eed2aa"], plate: "#8f5034", shape: "garnish" },
+];
+
 const waiterHome = { x: 1048, y: 542 };
 const pickup = { x: 681, y: 506 };
 const deliveryHandX = 44;
@@ -106,15 +120,13 @@ ui.kitchen.addEventListener("click", () => ui.key.focus());
 
 function reportMistake() {
   const previous = state.trouble;
-  state.trouble = Math.min(3, previous + 1);
+  state.trouble = Math.min(5, previous + 1);
   state.mistakeTime = time;
   if (previous !== state.trouble) cueChefs(state.step);
 
-  const messages = state.step === 1
-    ? (state.order === 2 ? ["鍋が泡立ってきた", "吹きこぼれた！", "鍋が大きく吹きこぼれている！"]
-      : ["煙が出てきた", "焦げはじめた！", "煙がもくもく。急いで！"])
-    : ["コックが手元を見直した", "コックたちが慌てはじめた", "ウェイターまでそわそわしている！"];
-  ui.status.textContent = messages[state.trouble - 1];
+  const message = mishaps[state.order].messages[state.step][state.trouble === 1 ? 0 : 1];
+  const reaction = ["", "", "クマも落ち着かない！", "額に汗が！", "みんな大慌て！"];
+  ui.status.textContent = [message, reaction[state.trouble - 1]].filter(Boolean).join("　");
   ui.status.classList.add("trouble");
 }
 
@@ -219,108 +231,193 @@ function drawChef(chef, active) {
   } else {
     drawSprite(art.characters, characterFrames[chef.frame], x, y, 190, height, 1, 1);
   }
+  drawSweat(x, y, height, moving ? walkingDirection : chef.direction, stress);
 }
 
-function drawStations(showFinished) {
-  for (const [index, station] of stations.entries()) {
-    const active = index === state.step;
-    ctx.fillStyle = active ? "rgba(38,32,26,.9)" : "rgba(35,39,41,.75)";
-    ctx.fillRect(station.labelX, station.labelY - 16, 88, 23);
-    ctx.fillStyle = active ? "#ffd29a" : "#e3dfd6";
-    ctx.font = "bold 13px 'Yu Gothic UI', sans-serif";
-    ctx.fillText(`0${index + 1}  ${stages[index]}`, station.labelX + 7, station.labelY);
-  }
+function drawTable(index, showFinished) {
+  const { outline } = tableLayers[index];
+  const station = stations[index];
+  ctx.save();
+  ctx.beginPath();
+  outline.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(art.kitchen, 0, 0);
+  ctx.restore();
 
-  const station = stations[state.step];
+  const active = index === state.step;
+  ctx.fillStyle = active ? "rgba(38,32,26,.9)" : "rgba(35,39,41,.75)";
+  ctx.fillRect(station.labelX, station.labelY - 16, 88, 23);
+  ctx.fillStyle = active ? "#ffd29a" : "#e3dfd6";
+  ctx.font = "bold 13px 'Yu Gothic UI', sans-serif";
+  ctx.fillText(`0${index + 1}  ${stages[index]}`, station.labelX + 7, station.labelY);
+
   if (state.deliveryTime !== null) {
-    if (showFinished) drawPlatedDish(state.order, station.x, station.y);
+    if (active && showFinished) drawPlatedDish(state.order, station.x, station.y);
     return;
   }
 
-  const previous = stations[state.step - 1];
   const amount = progress(time - state.stageTime, 280);
-  if (previous && amount < 1) {
+  if (index === state.step - 1 && amount < 1) {
     ctx.save();
     ctx.globalAlpha = 1 - amount;
-    drawFood(state.order, state.step - 1, previous.x, previous.y, previous.width, previous.height);
+    drawFood(state.order, index, station.x, station.y, station.width, station.height);
     ctx.restore();
-    ctx.save();
-    ctx.globalAlpha = amount;
-    drawFood(state.order, state.step, station.x, station.y + (1 - amount) * 8, station.width, station.height);
-    ctx.restore();
-  } else {
-    const panMotion = state.step === 1 ? Math.sin(time / (state.trouble ? 66 : 108)) * (2.5 + state.trouble * 2) : 0;
-    const x = station.x + panMotion;
-    drawFood(state.order, state.step, x, station.y, station.width, station.height);
-    if (state.step === 1 && state.order !== 2 && state.trouble >= 2) {
-      const charred = state.trouble === 3;
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(x - 9, station.y + 5, 25, 18, -.14, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.filter = `brightness(${charred ? .53 : .72}) saturate(.77)`;
-      drawFood(state.order, state.step, x, station.y, station.width, station.height);
-      ctx.restore();
-    }
   }
+  if (!active) return;
 
-  if (state.step === 1 && state.trouble) {
-    drawCookingTrouble(station, state.trouble);
-  } else if (state.step === 1) {
-    ctx.save();
-    for (let i = 0; i < 3; i++) {
-      const rise = (time / 780 + i / 3) % 1;
-      ctx.strokeStyle = `rgba(250,239,218,${Math.sin(rise * Math.PI) * .36})`;
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      const x = station.x - 17 + i * 14 + Math.sin(rise * Math.PI * 2) * 5;
-      const y = station.y - 17 - rise * 32;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.quadraticCurveTo(x - 6, y - 7, x + 2, y - 16);
-      ctx.stroke();
-    }
-    ctx.restore();
+  const strength = Math.min(3, state.trouble);
+  const hit = 1 - progress(time - state.mistakeTime, 460);
+  const oscillation = Math.sin(time / (strength ? 63 : 108));
+  const shake = oscillation * (index === 1 ? 2.5 + strength * 2 : strength * (2 + hit * 3));
+  const x = station.x + shake;
+  const y = station.y + (index > 0 ? (1 - amount) * 8 : 0);
+  ctx.save();
+  if (index > 0) ctx.globalAlpha = amount;
+  drawFood(state.order, index, x, y, station.width, station.height);
+  ctx.restore();
+
+  if (index === 1) {
+    drawCookingTrouble(x, y, strength, hit);
+  } else if (strength) {
+    drawStationMishap(x, y, index, strength, hit);
   }
 }
 
-function drawCookingTrouble(station, level) {
-  const curry = state.order === 2;
-  const potX = station.x - 19;
-  const potY = station.y + (curry ? -4 : 4);
+function fleck(x, y, rx, ry, angle, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(x, y, rx, ry, angle, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function noodle(x, y, scale, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x - 7 * scale, y);
+  ctx.quadraticCurveTo(x, y - 9, x + 4 * scale, y);
+  ctx.quadraticCurveTo(x + 10 * scale, y + 9, x + 15 * scale, y + 1);
+  ctx.stroke();
+}
+
+function drawStationMishap(x, y, step, level, hit) {
+  const dish = mishaps[state.order];
   ctx.save();
-  if (curry) {
-    const splash = 1 - progress(time - state.mistakeTime, 380);
-    const drops = level === 1 ? 4 : level === 2 ? 8 : 13;
-    for (let index = 0; index < drops; index++) {
-      const age = (time / 590 + index * .193) % 1;
-      const direction = index % 2 === 0 ? -1 : 1;
-      const x = potX + direction * (9 + index % 4 * 4 + age * (level === 1 ? 7 : 52 + splash * 18));
-      const y = potY - Math.sin(age * Math.PI) * (12 + level * 9 + splash * 10) + age * (level > 1 ? 18 : 0);
-      ctx.globalAlpha = Math.sin(age * Math.PI) * .9;
-      ctx.fillStyle = index % 3 === 0 ? "#edb573" : "#ad682f";
-      ctx.beginPath();
-      ctx.ellipse(x, y, 3.1 + level, 2.8 + level * .8, age, 0, Math.PI * 2);
-      ctx.fill();
+  const count = 2 + level * 2;
+  for (let i = 0; i < count; i++) {
+    const phase = (time / 750 + i * .173) % 1;
+    const side = i % 2 === 0 ? 1 : -1;
+    const spread = 45 + (i % 4) * 8 + (level - 1) * 5 + hit * 13;
+    const px = x + side * (27 + phase * spread);
+    const py = y + 12 + (i % 3) * 4 - Math.sin(phase * Math.PI) * (13 + level * 5 + hit * 10);
+    ctx.globalAlpha = .38 + Math.sin(phase * Math.PI) * .56;
+    if (step === 0) {
+      const color = dish.prep[i % 2];
+      const rx = state.order === 1 ? 6 : 3.5 + level * .7;
+      if (state.order === 2) {
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(phase * 3);
+        ctx.fillStyle = color;
+        ctx.fillRect(-rx, -rx * .65, rx * 1.6, rx * 1.3);
+        ctx.restore();
+      } else {
+        fleck(px, py, rx, state.order === 1 ? 2.2 : 3.1, phase * 4, color);
+      }
+    } else if (dish.shape === "strand") {
+      noodle(px, py, side, dish.plate);
+    } else {
+      const color = dish.shape === "garnish" && i % 3 === 0 ? "#789448" : dish.plate;
+      const rx = dish.shape === "pool" ? 5 + level * 3 : 2 + level * 1.4;
+      fleck(px, py, rx, 2 + level * .7, side * phase, color);
     }
-    ctx.globalAlpha = level > 1 ? .75 : 0;
-    ctx.fillStyle = "#9e612d";
-    ctx.beginPath();
-    ctx.ellipse(potX + 34, potY + 23, 14 + level * 7, 2 + level * 1.75, -.12, 0, Math.PI * 2);
-    ctx.fill();
   }
-  const puffs = curry ? level + 1 : level * 3;
-  for (let index = 0; index < puffs; index++) {
-    const age = (time / 940 + index / puffs) % 1;
-    const spread = 7 + level * 8;
-    const x = potX + Math.sin(index * 3.7 + age * 3) * spread * age;
-    const y = potY - 8 - age * (29 + level * 19);
-    const radius = 6 + age * (8 + level * 7);
-    ctx.globalAlpha = Math.sin(age * Math.PI) * (curry ? .41 : .51 + level * .07);
-    ctx.fillStyle = curry ? "#ede5d5" : (level >= 2 ? "#393332" : "#b9b1a8");
+  ctx.restore();
+}
+
+function drawCookingTrouble(x, y, level, hit) {
+  const curry = state.order === 2;
+  const potX = x - 17;
+  const potY = y + (curry ? -6 : 4);
+  ctx.save();
+  if (!curry && level >= 2) {
+    ctx.save();
     ctx.beginPath();
-    ctx.ellipse(x, y, radius, radius * .64, -.35, 0, Math.PI * 2);
+    ctx.ellipse(potX + 8, y + 5, 25, 18, -.14, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.filter = `brightness(${level === 3 ? .53 : .72}) saturate(.77)`;
+    drawFood(state.order, 1, x, y, stations[1].width, stations[1].height);
+    ctx.restore();
+  }
+  if (curry && level) {
+    for (let i = 0; i < 4 * level + 1; i++) {
+      const age = (time / 590 + i * .193) % 1;
+      const side = i % 2 === 0 ? -1 : 1;
+      const dropX = potX + side * (9 + i % 4 * 4 + age * (level === 1 ? 7 : 52 + hit * 18));
+      const dropY = potY - Math.sin(age * Math.PI) * (12 + level * 9 + hit * 10) + age * (level > 1 ? 18 : 0);
+      ctx.globalAlpha = Math.sin(age * Math.PI) * .9;
+      fleck(dropX, dropY, 3.1 + level, 2.8 + level * .8, age, i % 3 === 0 ? "#edb573" : "#ad682f");
+    }
+    if (level > 1) {
+      ctx.globalAlpha = .72;
+      fleck(potX + 38, potY + 27, 12 + level * 6, 3 + level, -.12, "#9e612d");
+    }
+  }
+  if (state.order === 0 && level) {
+    ctx.globalAlpha = .78;
+    for (let i = 0; i < level + 2; i++) {
+      const age = (time / 450 + i * .24) % 1;
+      const side = i % 2 === 0 ? 1 : -1;
+      fleck(potX + side * (15 + age * 23), potY - Math.sin(age * Math.PI) * (8 + 5 * level), 2.4, 3.7, side * .5, "#eab65f");
+    }
+  }
+  if (state.order === 1 && level) {
+    ctx.globalAlpha = .89;
+    for (let i = 0; i < level; i++) {
+      const age = (time / 520 + i * .29) % 1;
+      noodle(potX + 12 + i * 13 + age * 22, potY - 23 * Math.sin(age * Math.PI), 1, "#da9456");
+    }
+  }
+  const puffs = level === 0 ? 3 : curry ? level + 1 : level * 3;
+  for (let i = 0; i < puffs; i++) {
+    const age = (time / 940 + i / puffs) % 1;
+    const spread = 7 + level * 8;
+    const smokeX = potX + Math.sin(i * 3.7 + age * 3) * spread * age;
+    const smokeY = potY - 8 - age * (29 + level * 19);
+    const radius = 4 + age * (4 + level * 7);
+    ctx.globalAlpha = Math.sin(age * Math.PI) * (level === 0 ? .25 : curry ? .41 : .51 + level * .07);
+    fleck(smokeX, smokeY, radius, radius * .64, -.35, level < 2 || curry ? "#ede5d5" : "#393332");
+  }
+  ctx.restore();
+}
+
+function drawSweat(x, y, height, direction, stress) {
+  if (stress < 4) return;
+  const count = stress >= 5 ? 4 : 2;
+  const burst = 1 - progress(time - state.mistakeTime, 350);
+  ctx.save();
+  for (let i = 0; i < count; i++) {
+    const phase = (time / 540 + i / count) % 1;
+    const side = i % 3 === 2 ? -direction : direction;
+    const size = (i % 2 ? 6 : 8.5) + burst * 2;
+    const px = x + side * (height * .27 + phase * (18 + burst * 7));
+    const py = y - height * .88 + phase * 29 - burst * 9;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(side * -.43);
+    ctx.globalAlpha = .95 - phase * .64;
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.bezierCurveTo(-size, 0, -size * .72, size * .68, 0, size * .72);
+    ctx.bezierCurveTo(size * .72, size * .68, size, 0, 0, -size);
+    ctx.fillStyle = "#b4dfec";
+    ctx.strokeStyle = "#47606b";
+    ctx.lineWidth = 1.7;
     ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -361,6 +458,7 @@ function drawWaiter(elapsed) {
     drawSprite(art.characters, characterFrames[frame], pose.x, pose.y, 185, waiterHeight, pose.direction, 1);
   }
 
+  if (elapsed === null) drawSweat(pose.x, pose.y, waiterHeight, pose.direction, crewStress());
   if (elapsed === null || elapsed < deliveryPhases.approach || elapsed >= deliveryPhases.place) return;
   const amount = progress(elapsed - deliveryPhases.carry, deliveryPhases.place - deliveryPhases.carry);
   const slot = slots[state.served % slots.length];
@@ -394,11 +492,16 @@ function draw(timestamp) {
   }
   const delivery = state.deliveryTime === null ? null : time - state.deliveryTime;
   ctx.drawImage(art.kitchen, 0, 0);
+  const showFinished = delivery === null || delivery < deliveryPhases.approach;
+  const scene = tableLayers.map(({ depth }, index) => ({ depth, draw: () => drawTable(index, showFinished) }));
+  chefs.forEach((chef, index) => {
+    const active = delivery === null && (index === 1 ? state.step === 1 : state.step !== 1);
+    scene.push({ depth: chefPosition(chef).y, draw: () => drawChef(chef, active) });
+  });
+  scene.push({ depth: waiterPose(delivery).y, draw: () => drawWaiter(delivery) });
+  scene.sort((left, right) => left.depth - right.depth);
+  scene.forEach(layer => layer.draw());
   ctx.drawImage(art.counter, 0, counterTop);
-  drawStations(delivery === null || delivery < deliveryPhases.approach);
-  drawChef(chefs[0], state.step !== 1 && delivery === null);
-  drawChef(chefs[1], state.step === 1 && delivery === null);
-  drawWaiter(delivery);
   drawCounter(delivery);
   if (delivery !== null && delivery >= deliveryPhases.place) {
     ui.served.textContent = String(state.served + 1).padStart(2, "0");
