@@ -8,6 +8,8 @@ const orders = [
   ["カレーライス", ["じゃがいも", "jagaimo", "zyagaimo"], ["にこむ", "nikomu"], ["カレーライス", "kare-raisu"]],
   ["ハンバーグ", ["ひきにく", "hikiniku"], ["やきあげる", "yakiageru"], ["デミグラス", "demigurasu"]],
 ];
+const trialOrders = new Map([["curry", 2], ["hamburg", 3]]);
+const firstOrder = trialOrders.get(new URLSearchParams(window.location.search).get("order")) ?? 0;
 const stages = ["仕込み", "加熱", "盛り付け"];
 const stations = [
   { x: 728, y: 118, width: 132, height: 75, labelX: 524, labelY: 131 },
@@ -22,7 +24,10 @@ const counterTop = 562;
 const counterY = 611;
 const platedDish = stations[2];
 const slots = [802, 961, 1120, 1279];
-const state = { order: 0, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null };
+const state = {
+  order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null,
+  trouble: 0, mistakeTime: -Infinity, easing: null,
+};
 let art;
 let time = 0;
 let flash;
@@ -66,6 +71,8 @@ ui.key.addEventListener("keydown", event => {
   const candidate = state.typed + event.key.toLowerCase();
   const [, ...options] = orders[state.order][state.step + 1];
   if (!options.some(option => option.startsWith(candidate))) {
+    if (event.repeat) return;
+    reportMistake();
     ui.key.classList.add("bad");
     clearTimeout(flash);
     flash = setTimeout(() => ui.key.classList.remove("bad"), 200);
@@ -75,16 +82,20 @@ ui.key.addEventListener("keydown", event => {
   showRoman();
   if (!options.includes(candidate)) return;
   state.typed = "";
+  const recovered = clearTrouble();
   if (state.step < 2) {
     state.step++;
     state.stageTime = time;
     cueChefs(state.step);
-    ui.status.textContent = state.step === 1 ? "フライパンで加熱中" : "お皿に盛り付け中";
+    const nextStatus = state.step === 1
+      ? (state.order === 2 ? "鍋で煮込み中" : "フライパンで加熱中")
+      : "お皿に盛り付け中";
+    ui.status.textContent = recovered ? `持ち直した！　${nextStatus}` : nextStatus;
     showPrompt();
     return;
   }
   state.deliveryTime = time;
-  ui.status.textContent = "できあがり。ウェイターが運びます";
+  ui.status.textContent = recovered ? "持ち直した！　ウェイターが運びます" : "できあがり。ウェイターが運びます";
   ui.key.value = "";
 });
 ui.key.addEventListener("input", () => {
@@ -92,6 +103,33 @@ ui.key.addEventListener("input", () => {
   else ui.key.value = "";
 });
 ui.kitchen.addEventListener("click", () => ui.key.focus());
+
+function reportMistake() {
+  const previous = state.trouble;
+  state.trouble = Math.min(3, previous + 1);
+  state.mistakeTime = time;
+  if (previous !== state.trouble) cueChefs(state.step);
+
+  const messages = state.step === 1
+    ? (state.order === 2 ? ["鍋が泡立ってきた", "吹きこぼれた！", "鍋が大きく吹きこぼれている！"]
+      : ["煙が出てきた", "焦げはじめた！", "煙がもくもく。急いで！"])
+    : ["コックが手元を見直した", "コックたちが慌てはじめた", "ウェイターまでそわそわしている！"];
+  ui.status.textContent = messages[state.trouble - 1];
+  ui.status.classList.add("trouble");
+}
+
+function clearTrouble() {
+  if (!state.trouble) return false;
+  state.easing = { level: state.trouble, start: time };
+  state.trouble = 0;
+  ui.status.classList.remove("trouble");
+  return true;
+}
+
+function crewStress() {
+  const easing = state.easing;
+  return Math.max(state.trouble, easing ? easing.level * (1 - progress(time - easing.start, 310)) : 0);
+}
 
 function loadImage(path) {
   return new Promise((resolve, reject) => {
@@ -147,9 +185,10 @@ function chefPosition(chef) {
 function cueChefs(stage) {
   for (const [index, chef] of chefs.entries()) {
     const from = chefPosition(chef);
-    const to = chefStations[stage][index];
+    const assists = state.trouble >= 2 && stage === 1 && index === 0;
+    const to = assists ? { x: 477, y: 297 } : chefStations[stage][index];
     const distance = Math.hypot(to.x - from.x, to.y - from.y);
-    chef.move = { from, to, start: time, duration: Math.max(1, distance * 3.1) };
+    chef.move = { from, to, start: time, duration: Math.max(1, distance * (state.trouble >= 2 ? 2.3 : 3.1)) };
   }
 }
 
@@ -157,10 +196,15 @@ function drawChef(chef, active) {
   const { x, y, moving } = chefPosition(chef);
   const duration = time - (chef.move?.start ?? time);
   const walkingDirection = Math.sign((chef.move?.to.x ?? x) - (chef.move?.from.x ?? x)) || chef.direction;
+  const stress = crewStress();
   const height = chef.height + (y - 320) * .12;
   shadow(x, y - 3, chef.frame === 0 ? 34 : 28);
-  if (moving || active) {
-    const cycle = Math.floor(duration / 130) % 4;
+  const worried = stress >= (active ? .85 : 1.75);
+  if (worried && (!moving || Math.floor(time / 92) % 2 === 0)) {
+    const hop = Math.sin(time / (stress >= 2 ? 62 : 101)) * (stress + 1);
+    drawSprite(art.reactions, reactionFrames[chef.frame === 0 ? 0 : 1], x, y - Math.abs(hop), 190, height, moving ? walkingDirection * chef.direction : 1, 1);
+  } else if (moving || active) {
+    const cycle = Math.floor(duration / (stress >= 2 ? 83 : 130)) % 4;
     const frame = moving ? chef.frame + [1, 0, 1, 0][cycle] : chef.frame + 2;
     const direction = moving ? walkingDirection * chef.direction : 1;
     ctx.save();
@@ -205,11 +249,24 @@ function drawStations(showFinished) {
     drawFood(state.order, state.step, station.x, station.y + (1 - amount) * 8, station.width, station.height);
     ctx.restore();
   } else {
-    const panMotion = state.step === 1 ? Math.sin(time / 108) * 2.5 : 0;
-    drawFood(state.order, state.step, station.x + panMotion, station.y, station.width, station.height);
+    const panMotion = state.step === 1 ? Math.sin(time / (state.trouble ? 66 : 108)) * (2.5 + state.trouble * 2) : 0;
+    const x = station.x + panMotion;
+    drawFood(state.order, state.step, x, station.y, station.width, station.height);
+    if (state.step === 1 && state.order !== 2 && state.trouble >= 2) {
+      const charred = state.trouble === 3;
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(x - 9, station.y + 5, 25, 18, -.14, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.filter = `brightness(${charred ? .53 : .72}) saturate(.77)`;
+      drawFood(state.order, state.step, x, station.y, station.width, station.height);
+      ctx.restore();
+    }
   }
 
-  if (state.step === 1) {
+  if (state.step === 1 && state.trouble) {
+    drawCookingTrouble(station, state.trouble);
+  } else if (state.step === 1) {
     ctx.save();
     for (let i = 0; i < 3; i++) {
       const rise = (time / 780 + i / 3) % 1;
@@ -227,9 +284,54 @@ function drawStations(showFinished) {
   }
 }
 
+function drawCookingTrouble(station, level) {
+  const curry = state.order === 2;
+  const potX = station.x - 19;
+  const potY = station.y + (curry ? -4 : 4);
+  ctx.save();
+  if (curry) {
+    const splash = 1 - progress(time - state.mistakeTime, 380);
+    const drops = level === 1 ? 4 : level === 2 ? 8 : 13;
+    for (let index = 0; index < drops; index++) {
+      const age = (time / 590 + index * .193) % 1;
+      const direction = index % 2 === 0 ? -1 : 1;
+      const x = potX + direction * (9 + index % 4 * 4 + age * (level === 1 ? 7 : 52 + splash * 18));
+      const y = potY - Math.sin(age * Math.PI) * (12 + level * 9 + splash * 10) + age * (level > 1 ? 18 : 0);
+      ctx.globalAlpha = Math.sin(age * Math.PI) * .9;
+      ctx.fillStyle = index % 3 === 0 ? "#edb573" : "#ad682f";
+      ctx.beginPath();
+      ctx.ellipse(x, y, 3.1 + level, 2.8 + level * .8, age, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = level > 1 ? .75 : 0;
+    ctx.fillStyle = "#9e612d";
+    ctx.beginPath();
+    ctx.ellipse(potX + 34, potY + 23, 14 + level * 7, 2 + level * 1.75, -.12, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const puffs = curry ? level + 1 : level * 3;
+  for (let index = 0; index < puffs; index++) {
+    const age = (time / 940 + index / puffs) % 1;
+    const spread = 7 + level * 8;
+    const x = potX + Math.sin(index * 3.7 + age * 3) * spread * age;
+    const y = potY - 8 - age * (29 + level * 19);
+    const radius = 6 + age * (8 + level * 7);
+    ctx.globalAlpha = Math.sin(age * Math.PI) * (curry ? .41 : .51 + level * .07);
+    ctx.fillStyle = curry ? "#ede5d5" : (level >= 2 ? "#393332" : "#b9b1a8");
+    ctx.beginPath();
+    ctx.ellipse(x, y, radius, radius * .64, -.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 const deliveryPhases = { approach: 930, carry: 1970, place: 2270, reset: 2910 };
 
 function waiterPose(elapsed) {
+  if (elapsed === null && crewStress() >= 2.2) {
+    const phase = time / 185;
+    return { x: waiterHome.x + Math.sin(phase) * 52, y: waiterHome.y, direction: Math.cos(phase) > 0 ? 1 : -1, walk: true, hands: false };
+  }
   if (elapsed === null || elapsed < 260) return { ...waiterHome, direction: 1, walk: false, hands: false };
   const destination = slots[state.served % slots.length];
   if (elapsed < deliveryPhases.approach) {
@@ -252,7 +354,12 @@ function drawWaiter(elapsed) {
   shadow(pose.x, pose.y - 3, 32);
   const walkFrames = [7, 8];
   const frame = pose.walk ? walkFrames[Math.floor(time / 115) % walkFrames.length] : (pose.hands ? 8 : 6);
-  drawSprite(art.characters, characterFrames[frame], pose.x, pose.y, 185, waiterHeight, pose.direction, 1);
+  const worried = elapsed === null && crewStress() >= 1.8;
+  if (worried && (!pose.walk || Math.floor(time / 95) % 2 === 0)) {
+    drawSprite(art.reactions, reactionFrames[2], pose.x, pose.y, 185, waiterHeight, pose.direction, 1);
+  } else {
+    drawSprite(art.characters, characterFrames[frame], pose.x, pose.y, 185, waiterHeight, pose.direction, 1);
+  }
 
   if (elapsed === null || elapsed < deliveryPhases.approach || elapsed >= deliveryPhases.place) return;
   const amount = progress(elapsed - deliveryPhases.carry, deliveryPhases.place - deliveryPhases.carry);
@@ -267,7 +374,7 @@ function drawCounter(elapsed) {
   const inDelivery = elapsed !== null && elapsed >= deliveryPhases.place;
   const total = state.served + Number(inDelivery);
   for (let item = Math.max(0, total - slots.length); item < total; item++) {
-    drawPlatedDish(item % orders.length, slots[item % slots.length], counterY);
+    drawPlatedDish((firstOrder + item) % orders.length, slots[item % slots.length], counterY);
   }
 }
 
@@ -276,7 +383,7 @@ function draw(timestamp) {
   const elapsed = state.deliveryTime === null ? null : time - state.deliveryTime;
   if (elapsed !== null && elapsed >= deliveryPhases.reset) {
     state.served++;
-    state.order = state.served % orders.length;
+    state.order = (firstOrder + state.served) % orders.length;
     state.step = 0;
     state.stageTime = time;
     state.deliveryTime = null;
@@ -303,7 +410,9 @@ const characterFrames = [[4, 4, 199, 252], [264, 4, 200, 252], [524, 4, 204, 252
 
 const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3, 193, 184, 94], [193, 193, 184, 143], [383, 193, 184, 117], [3, 383, 184, 94], [193, 383, 184, 138], [383, 383, 184, 115], [3, 573, 184, 144], [193, 573, 184, 146], [383, 573, 184, 130]];
 
-const files = ["kitchen", "characters", "food", "counter"];
+const reactionFrames = [[4, 4, 209, 252], [264, 4, 216, 252], [524, 4, 165, 252]];
+
+const files = ["kitchen", "characters", "food", "counter", "reactions"];
 Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
   ui.status.textContent = "ローマ字を入力して調理開始";
