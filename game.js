@@ -49,10 +49,12 @@ const chefs = [
   { x: 340, y: 326, height: 163, direction: 1, frame: 0, move: null },
   { x: 1152, y: 324, height: 177, direction: -1, frame: 3, move: null },
 ];
+// Keep the badger's face clear of the tabletops as he moves through the left aisle.
+const badgerAssistPosition = { x: 400, y: 297 };
 const chefStations = [
-  [{ x: 459, y: 225 }, { x: 1152, y: 324 }],
+  [{ x: 418, y: 225 }, { x: 1152, y: 324 }],
   [{ x: 373, y: 312 }, { x: 976, y: 324 }],
-  [{ x: 411, y: 428 }, { x: 1070, y: 303 }],
+  [{ x: 369, y: 428 }, { x: 1070, y: 303 }],
 ];
 
 function showPrompt() {
@@ -198,7 +200,7 @@ function cueChefs(stage) {
   for (const [index, chef] of chefs.entries()) {
     const from = chefPosition(chef);
     const assists = state.trouble >= 2 && stage === 1 && index === 0;
-    const to = assists ? { x: 477, y: 297 } : chefStations[stage][index];
+    const to = assists ? badgerAssistPosition : chefStations[stage][index];
     const distance = Math.hypot(to.x - from.x, to.y - from.y);
     chef.move = { from, to, start: time, duration: Math.max(1, distance * (state.trouble >= 2 ? 2.3 : 3.1)) };
   }
@@ -511,7 +513,7 @@ function draw(timestamp) {
 
 const characterFrames = [[4, 4, 199, 252], [264, 4, 200, 252], [524, 4, 204, 252], [4, 264, 184, 252], [264, 264, 194, 252], [524, 264, 196, 252], [4, 524, 178, 252], [264, 524, 178, 252], [524, 524, 180, 252]];
 
-const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3, 193, 184, 94], [193, 193, 184, 143], [383, 193, 184, 117], [3, 383, 184, 94], [193, 383, 184, 138], [383, 383, 184, 115], [3, 573, 184, 144], [193, 573, 184, 146], [383, 573, 184, 130]];
+const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3, 193, 184, 94], [193, 193, 184, 143], [383, 193, 184, 117], [3, 383, 184, 94], [193, 383, 184, 138], [383, 383, 184, 115], [3, 573, 184, 144], [193, 573, 176, 146], [383, 573, 184, 130]];
 
 const reactionFrames = [[4, 4, 209, 252], [264, 4, 216, 252], [524, 4, 165, 252]];
 
