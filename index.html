@@ -3,7 +3,7 @@
 <head>
 <link rel="icon" type="image/png" sizes="512x512" href="/castor-favicon.png">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>タイピングキッチン | KAIRI_studio</title>
 <style>
 * { box-sizing: border-box; }
@@ -209,6 +209,29 @@ tr:nth-child(3) .rank-number { background: #f3d7bc; border-color: #c89572; color
 body[data-screen="ranking"] #timer, body[data-screen="ranking"] footer { display: none; }
 body[data-screen="ranking"] #kitchen { min-height: min(570px, 78svh); object-fit: cover; border-radius: 18px; }
 body[data-screen="ranking"] .curtain { border-radius: 18px; }
+html { touch-action: pan-x pan-y; }
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+img, canvas { -webkit-user-drag: none; }
+#desktopOnly { margin: 0 0 14px; padding: 11px; background: #fff8e8; border: 1px solid #e4bc88; border-radius: 10px; text-align: center; }
+#welcome #desktopOnly p { margin: 0 0 8px; font-weight: 800; }
+#copyGameLink { min-height: 40px; }
+#shareGameUrl { margin-top: 8px; }
+#copyGameStatus:empty { display: none; }
+body[data-mobile="true"] #welcome { min-height: 100svh; background: #fff4dd; }
+body[data-mobile="true"] #welcome::before { display: none; }
+body[data-mobile="true"] #welcomeTitle { align-self: center; width: min(62vw, 245px); }
+body[data-mobile="true"] .home-art { position: relative; z-index: auto; grid-column: 1; align-self: center; margin: 0; }
+body[data-mobile="true"] .home-art img { width: 100%; height: auto; aspect-ratio: 1774 / 887; object-fit: contain; }
+body[data-mobile="true"] .welcome-copy { display: contents; }
+body[data-mobile="true"] #welcome { align-content: center; justify-items: center; grid-template-rows: auto auto auto; padding: 54px 0 18px; gap: 8px; }
+body[data-mobile="true"] #welcomeTitle { grid-row: 1; margin: 0; }
+body[data-mobile="true"] .home-art { grid-row: 2; width: min(100%, 740px); }
+body[data-mobile="true"] .home-menu { grid-row: 3; padding: 4px 14px 0; }
+body[data-mobile="true"] #welcome .card-actions { grid-template-columns: 1fr; }
+body[data-mobile="true"][data-screen="ranking"] .scene { min-height: min(620px, calc(100svh - 60px)); }
+body[data-mobile="true"][data-screen="ranking"] #kitchen { position: absolute; inset: 0; height: 100%; min-height: 0; object-fit: contain; }
+body[data-mobile="true"][data-screen="ranking"] .ranking-card { min-height: 0; }
 </style>
 </head>
 <body data-screen="home">
@@ -222,6 +245,12 @@ body[data-screen="ranking"] .curtain { border-radius: 18px; }
       <div class="welcome-copy">
         <h2 id="welcomeTitle"><img src="assets/diner-title-logo.webp" width="780" height="520" alt="タイピングキッチン"></h2>
         <div class="home-menu">
+          <div id="desktopOnly" hidden>
+            <p>パソコンであそべるゲームです</p>
+            <button id="copyGameLink" type="button" class="secondary">リンクをコピー</button>
+            <input id="shareGameUrl" class="name-input" aria-label="ゲームのリンク" type="url" readonly hidden>
+            <p id="copyGameStatus" class="hint" role="status"></p>
+          </div>
           <div class="card-actions">
             <button id="start" class="home-action" type="button" disabled>キッチンをじゅんび中…</button>
             <button id="openRanking" class="home-action" type="button">ランキング</button>
@@ -229,7 +258,7 @@ body[data-screen="ranking"] .curtain { border-radius: 18px; }
           <div class="nickname-row"><span><b>なまえ</b><span id="homeName">まだなし</span></span><button id="editHomeName" class="text-button" type="button" aria-label="なまえをかえる">かえる</button></div>
           <p id="homeStatus" class="form-status" role="status"></p>
           <p id="homeBest" class="hint"></p>
-          <p class="hint">パソコンのキーボードで ローマ字を打とう</p>
+          <p id="keyboardHint" class="hint">パソコンのキーボードで ローマ字を打とう</p>
         </div>
       </div>
     </section>
@@ -286,7 +315,7 @@ body[data-screen="ranking"] .curtain { border-radius: 18px; }
     <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">きめる</button></div>
   </form>
 </dialog>
-<script src="game.js?v=ranking-restored"></script>
+<script src="game.js?v=desktop-play"></script>
 <script type="module" src="ranking.js?v=two-minute"></script>
 </body>
 </html>

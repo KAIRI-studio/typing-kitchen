@@ -2,6 +2,30 @@
 
 const ui = Object.fromEntries([...document.querySelectorAll("[id]")].map(element => [element.id, element]));
 const ctx = ui.kitchen.getContext("2d");
+const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent)
+  || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+
+if (isMobileDevice) {
+  document.body.dataset.mobile = "true";
+  ui.start.hidden = true;
+  ui.keyboardHint.hidden = true;
+  ui.desktopOnly.hidden = false;
+}
+
+ui.copyGameLink.addEventListener("click", async () => {
+  const url = new URL("./", window.location.href).href;
+  try {
+    await navigator.clipboard.writeText(url);
+    ui.shareGameUrl.hidden = true;
+    ui.copyGameStatus.textContent = "リンクをコピーしました";
+  } catch {
+    ui.shareGameUrl.hidden = false;
+    ui.shareGameUrl.value = url;
+    ui.shareGameUrl.focus();
+    ui.shareGameUrl.select();
+    ui.copyGameStatus.textContent = "このリンクをコピーしてね";
+  }
+});
 const orders = [
   ["オムライス", ["たまねぎ", "tamanegi"], ["たまご", "tamago"], ["ケチャップ", "kechappu", "ketyappu"]],
   ["ナポリタン", ["ピーマン", "pi-man"], ["いためる", "itameru"], ["ナポリタン", "naporitan"]],
@@ -274,7 +298,7 @@ function updateTimer() {
 }
 
 function openForBusiness() {
-  if (!art || submissionBusy || !["ready", "finished"].includes(state.phase)) return;
+  if (isMobileDevice || !art || submissionBusy || !["ready", "finished"].includes(state.phase)) return;
   prepareBell();
   setCounterRows(1);
   completedRound = null;
