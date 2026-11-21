@@ -184,41 +184,41 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
 </head>
 <body data-screen="home">
 <main>
-  <header><h1>タイピングキッチン</h1><div class="session-controls"><span class="brand">KAIRI_STUDIO</span><button id="sound" type="button" class="secondary" aria-label="効果音" aria-pressed="true">音あり</button><span id="timer" aria-label="残り時間">2:00</span><button id="pause" type="button" hidden>一時停止</button></div></header>
+  <header><h1>タイピングキッチン</h1><div class="session-controls"><span class="brand">KAIRI_STUDIO</span><button id="sound" type="button" class="secondary" aria-label="ゲームの音" aria-pressed="true">音あり</button><span id="timer" aria-label="のこり時間">2:00</span><button id="pause" type="button" hidden>ひと休み</button></div></header>
   <div class="scene">
-  <canvas id="kitchen" width="1440" height="672" aria-label="奥から仕込み、加熱、盛り付けの調理台が並ぶ厨房"></canvas>
+  <canvas id="kitchen" width="1440" height="672" aria-label="じゅんび、火を通す、もりつけの台がならぶキッチン"></canvas>
   <div id="curtain" class="curtain">
     <section id="welcome" class="session-card" aria-labelledby="welcomeTitle">
-      <div class="home-art"><img src="assets/diner-wide-home.webp" width="1774" height="887" fetchpriority="high" alt="洋食店のコックたちと、オムライスを受け取るウェイター"></div>
+      <div class="home-art"><img src="assets/diner-wide-home.webp" width="1774" height="887" fetchpriority="high" alt="お店のコックたちと、オムライスを受け取るウェイター"></div>
       <div class="welcome-copy">
         <h2 id="welcomeTitle"><img src="assets/diner-title-logo.webp" width="780" height="520" alt="タイピングキッチン"></h2>
         <div class="home-menu">
           <div class="card-actions">
-            <button id="start" class="home-action" type="button" disabled>厨房を準備しています…</button>
+            <button id="start" class="home-action" type="button" disabled>キッチンをじゅんび中…</button>
           </div>
-          <div class="nickname-row"><span><b>なまえ</b><span id="homeName">未設定</span></span><button id="editHomeName" class="text-button" type="button" aria-label="なまえを変更">変更</button></div>
+          <div class="nickname-row"><span><b>なまえ</b><span id="homeName">まだなし</span></span><button id="editHomeName" class="text-button" type="button" aria-label="なまえをかえる">かえる</button></div>
           <p id="homeStatus" class="form-status" role="status"></p>
           <p id="homeBest" class="hint"></p>
-          <p class="hint">PCの半角英字キーでプレイ</p>
+          <p class="hint">パソコンのキーボードで ローマ字を打とう</p>
         </div>
       </div>
     </section>
     <div id="opening" aria-hidden="true" hidden><div class="opening-haze"></div><div class="doorway"><div class="door-leaf door-left"><img class="door-panel" src="assets/diner-swing-door.webp" alt=""></div><div class="door-leaf door-right"><img class="door-panel" src="assets/diner-swing-door.webp" alt=""></div></div></div>
     <section id="pauseCard" class="session-card" aria-labelledby="pauseTitle" hidden>
-      <h2 id="pauseTitle">ひと休み</h2><p>準備ができたら営業を再開しよう。</p>
-      <button id="resume" type="button">営業を再開</button>
-      <button id="quit" type="button" class="text-button">営業を終えてホームへ</button>
+      <h2 id="pauseTitle">ひと休み</h2><p>じゅんびができたら、つづけよう。</p>
+      <button id="resume" type="button">つづける</button>
+      <button id="quit" type="button" class="text-button">やめてホームへ</button>
     </section>
     <section id="results" class="session-card" aria-labelledby="resultTitle" hidden>
-      <h2 id="resultTitle">本日の営業終了</h2>
+      <h2 id="resultTitle">おつかれさま！</h2>
       <canvas id="resultDishes" width="500" height="74" aria-hidden="true" hidden></canvas>
       <dl class="results-grid">
-        <div><dt>お届けした料理</dt><dd id="resultServed">0皿</dd></div>
-        <div><dt>正確さ</dt><dd id="resultAccuracy">—</dd></div>
+        <div><dt>とどけた料理</dt><dd id="resultServed">0さら</dd></div>
+        <div><dt>正しく打てたわりあい</dt><dd id="resultAccuracy">—</dd></div>
         <div><dt>打ち間違い</dt><dd id="resultMisses">0回</dd></div>
       </dl>
       <p id="comparison"></p>
-      <div class="card-actions"><button id="retry" type="button">もう一度あそぶ</button></div>
+      <div class="card-actions"><button id="retry" type="button">もういちどあそぶ</button></div>
       <button id="homeFromResult" type="button" class="text-button">ホームへ</button>
     </section>
     <div id="confetti" aria-hidden="true"></div>
@@ -226,21 +226,21 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
   <section id="typingConsole" class="console" hidden aria-label="タイピング">
     <div><div class="caption">注文</div><h2 class="order" id="order"></h2><strong id="stage"></strong></div>
     <div class="entry"><span id="stamp" aria-hidden="true" hidden>OK!</span><h2 id="prompt"></h2><div id="roman" aria-hidden="true"><span id="typed"></span><span id="next"></span><span id="rest"></span></div>
-      <input id="key" aria-label="ローマ字入力欄" placeholder="半角英字で入力" autocomplete="off" spellcheck="false" inputmode="none" disabled>
+      <input id="key" aria-label="ローマ字を打つところ" placeholder="ローマ字を打とう" autocomplete="off" spellcheck="false" inputmode="none" disabled>
     </div>
-    <div class="count"><div class="caption">提供済み</div><strong id="served">00</strong> 皿</div>
+    <div class="count"><div class="caption">とどけた数</div><strong id="served">00</strong> さら</div>
   </section>
-  <footer><span id="status" role="status">厨房を準備しています…</span><span>PCの英数キーで入力</span></footer>
+  <footer><span id="status" role="status">キッチンをじゅんび中…</span><span>パソコンの英字キーで打とう</span></footer>
 </main>
 <dialog id="nameDialog" aria-labelledby="nameDialogTitle">
   <form id="nameForm">
-    <h2 id="nameDialogTitle">なまえを変更</h2>
+    <h2 id="nameDialogTitle">なまえをかえる</h2>
     <label class="name-label" for="playerName">ニックネーム（8文字まで）</label>
     <input id="playerName" class="name-input" type="text" autocomplete="off" spellcheck="false" maxlength="16" autofocus>
     <p id="nameStatus" class="form-status error" role="status"></p>
-    <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">保存</button></div>
+    <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">きめる</button></div>
   </form>
 </dialog>
-<script src="game.js?v=two-minute-home"></script>
+<script src="game.js?v=easy-words"></script>
 </body>
 </html>

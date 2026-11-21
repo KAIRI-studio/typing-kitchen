@@ -56,7 +56,7 @@ function choosePrompts(order, completed) {
 
 const trialOrders = new Map([["omurice", 0], ["napolitan", 1], ["curry", 2], ["hamburg", 3]]);
 const firstOrder = trialOrders.get(new URLSearchParams(window.location.search).get("order")) ?? 0;
-const stages = ["仕込み", "加熱", "盛り付け"];
+const stages = ["じゅんび", "火を通す", "もりつけ"];
 const stations = [
   { x: 728, y: 118, width: 132, height: 75, labelX: 524, labelY: 131 },
   { x: 728, y: 223, width: 151, height: 90, labelX: 503, labelY: 238 },
@@ -70,10 +70,10 @@ const tableLayers = [
 ];
 
 const mishaps = [
-  { messages: [["たまねぎが散った！", "たまごが跳ねた！"], ["卵が焼けすぎそう！", "卵のふちが焦げてきた！"], ["ケチャップが跳ねた！", "ケチャップが皿のふちまで飛んだ！"]], prep: ["#eee0bf", "#f3b855"], plate: "#b43c29", shape: "drop" },
-  { messages: [["ピーマンが飛び散った！", "ピーマンがまな板からこぼれた！"], ["麺がフライパンから跳ねた！", "麺が鍋肌にくっついて煙が出た！"], ["麺が皿からはみ出した！", "ナポリタンが皿のふちまで滑った！"]], prep: ["#6c8c44", "#b6c46d"], plate: "#d99148", shape: "strand" },
-  { messages: [["じゃがいもが転がった！", "じゃがいもがまな板から落ちそう！"], ["鍋が泡立ってきた", "カレーが吹きこぼれた！"], ["ルーがご飯にかかりすぎた！", "ルーが皿のふちまで流れた！"]], prep: ["#e9c488", "#f9e2af"], plate: "#9e5c2c", shape: "pool" },
-  { messages: [["ひき肉が形を崩した！", "ひき肉と玉ねぎが飛び散った！"], ["煙が出てきた", "ハンバーグが焦げはじめた！"], ["デミグラスソースが跳ねた！", "付け合わせまでずれた！"]], prep: ["#b87166", "#eed2aa"], plate: "#8f5034", shape: "garnish" },
+  { messages: [["たまねぎがちった！", "たまごがはねた！"], ["たまごが焼けすぎそう！", "たまごのふちがこげてきた！"], ["ケチャップがはねた！", "ケチャップがさらのふちまでとんだ！"]], prep: ["#eee0bf", "#f3b855"], plate: "#b43c29", shape: "drop" },
+  { messages: [["ピーマンがとびちった！", "ピーマンがまな板からこぼれた！"], ["めんがフライパンからはねた！", "めんがなべにくっついてけむりが出た！"], ["めんがさらからはみ出した！", "ナポリタンがさらのふちまですべった！"]], prep: ["#6c8c44", "#b6c46d"], plate: "#d99148", shape: "strand" },
+  { messages: [["じゃがいもがころがった！", "じゃがいもがまな板から落ちそう！"], ["なべがあわだってきた", "カレーがふきこぼれた！"], ["ルーがごはんにかかりすぎた！", "ルーがさらのふちまで流れた！"]], prep: ["#e9c488", "#f9e2af"], plate: "#9e5c2c", shape: "pool" },
+  { messages: [["ひきにくが形をくずした！", "ひきにくとたまねぎがとびちった！"], ["けむりが出てきた", "ハンバーグがこげはじめた！"], ["デミグラスソースがはねた！", "つけあわせまでずれた！"]], prep: ["#b87166", "#eed2aa"], plate: "#8f5034", shape: "garnish" },
 ];
 
 const waiterHome = { x: 1048, y: 542 };
@@ -224,9 +224,9 @@ ui.key.addEventListener("keydown", event => {
     state.stageTime = time;
     cueChefs(state.step);
     const nextStatus = state.step === 1
-      ? (state.order === 2 ? "鍋で煮込み中" : "フライパンで加熱中")
-      : "お皿に盛り付け中";
-    ui.status.textContent = recovered ? `持ち直した！　${nextStatus}` : nextStatus;
+      ? (state.order === 2 ? "なべで ぐつぐつ" : "フライパンで ジュージュー")
+      : "おさらに もりつけ中";
+    ui.status.textContent = recovered ? `うまくいった！　${nextStatus}` : nextStatus;
     showPrompt();
     return;
   }
@@ -237,7 +237,7 @@ ui.key.addEventListener("keydown", event => {
   state.step = 0;
   state.stageTime = time;
   cueChefs(0);
-  ui.status.textContent = recovered ? "持ち直した！　次の注文へ" : "料理が完成！　次の注文へ";
+  ui.status.textContent = recovered ? "うまくいった！　つぎの注文へ" : "料理ができた！　つぎの注文へ";
   showPrompt();
 });
 ui.key.addEventListener("input", () => {
@@ -304,7 +304,7 @@ function startRound() {
   if (state.phase !== "opening") return;
   state.phase = "playing";
   state.lastFrame = performance.now();
-  ui.status.textContent = "営業開始！　ローマ字で料理をつくろう";
+  ui.status.textContent = "お店が開いたよ！　ローマ字で料理をつくろう";
   ui.key.disabled = false;
   ui.pause.hidden = false;
   showSessionCard(null);
@@ -331,23 +331,23 @@ function finishRound() {
   ui.key.disabled = true;
   ui.pause.hidden = true;
   ui.served.textContent = String(state.served).padStart(2, "0");
-  ui.resultServed.textContent = `${state.served}皿`;
+  ui.resultServed.textContent = `${state.served}さら`;
   const total = state.correct + state.misses;
   ui.resultAccuracy.textContent = total ? `${Math.round(state.correct / total * 100)}%` : "—";
   ui.resultMisses.textContent = `${state.misses}回`;
   const previous = readRecord();
   const best = Math.max(previous?.best ?? 0, state.served);
   const difference = previous ? state.served - previous.last : 0;
-  const comparison = previous ? `前回 ${previous.last}皿（${difference > 0 ? "+" : ""}${difference}皿）　自己ベスト ${best}皿` : `はじめての記録　${state.served}皿`;
+  const comparison = previous ? `前のきろく ${previous.last}さら（${difference > 0 ? "+" : ""}${difference}さら）　ベストきろく ${best}さら` : `はじめてのきろく　${state.served}さら`;
   const newBest = state.served > (previous?.best ?? 0);
-  ui.comparison.textContent = newBest ? `自己ベスト更新！　${best}皿` : comparison;
+  ui.comparison.textContent = newBest ? `ベストきろく！　${best}さら` : comparison;
   ui.comparison.classList.toggle("best", newBest);
   showResultDishes();
   if (newBest && !reducedMotion.matches) celebrateBest();
   try {
     localStorage.setItem(recordKey, JSON.stringify({ last: state.served, best }));
   } catch {
-    ui.comparison.textContent += "　このブラウザでは記録を保存できませんでした";
+    ui.comparison.textContent += "　このブラウザではきろくを残せませんでした";
   }
   ui.status.classList.remove("trouble");
   ui.status.textContent = `${roundDuration / 60000}分間、おつかれさま！`;
@@ -363,7 +363,7 @@ function pauseRound() {
   state.phase = "paused";
   ui.key.disabled = true;
   ui.pause.hidden = true;
-  ui.status.textContent = "営業を一時停止しています";
+  ui.status.textContent = "ひと休み中";
   showSessionCard("pauseCard");
   ui.resume.focus();
 }
@@ -374,7 +374,7 @@ function resumeRound() {
   state.lastFrame = performance.now();
   ui.key.disabled = false;
   ui.pause.hidden = false;
-  ui.status.textContent = "営業再開！";
+  ui.status.textContent = "つづけよう！";
   showSessionCard(null);
   ui.key.focus();
 }
@@ -401,7 +401,7 @@ let playerName = "";
 try { playerName = localStorage.getItem(playerNameKey) || ""; } catch {}
 
 function renderPlayerName() {
-  const label = playerName || "未設定";
+  const label = playerName || "まだなし";
   ui.homeName.textContent = label;
 }
 
@@ -430,7 +430,7 @@ renderPlayerName();
 
 function refreshHomeBest() {
   const record = readRecord();
-  ui.homeBest.textContent = record ? `2分の自己ベスト　${record.best}皿` : "";
+  ui.homeBest.textContent = record ? `2分のベストきろく　${record.best}さら` : "";
 }
 
 function goHome() {
@@ -441,7 +441,7 @@ function goHome() {
   ui.key.disabled = true;
   ui.pause.hidden = true;
   ui.status.classList.remove("trouble");
-  ui.status.textContent = "2分間で、何皿お届けできるかな？";
+  ui.status.textContent = "2分間で、何さらおとどけできるかな？";
   refreshHomeBest();
   showSessionCard("welcome");
   ui.start.focus();
@@ -458,7 +458,7 @@ function reportMistake() {
   if (previous !== state.trouble) cueChefs(state.step);
 
   const message = mishaps[state.order].messages[state.step][state.trouble === 1 ? 0 : 1];
-  const reaction = ["", "", "クマも落ち着かない！", "額に汗が！", "みんな大慌て！"];
+  const reaction = ["", "", "クマもそわそわ！", "おでこにあせが！", "みんな大あわて！"];
   ui.status.textContent = [message, reaction[state.trouble - 1]].filter(Boolean).join("　");
   ui.status.classList.add("trouble");
 }
@@ -906,7 +906,7 @@ function celebrateBest() {
 const files = ["kitchen", "characters", "food", "counter", "reactions"];
 Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
-  ui.status.textContent = "準備できました。営業をはじめよう";
+  ui.status.textContent = "じゅんびができたよ！";
   ui.start.disabled = false;
   ui.start.textContent = "開店する（2分）";
   if (document.activeElement === document.body) ui.start.focus();
@@ -916,7 +916,7 @@ Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(im
     draw(timestamp);
   });
 }).catch(() => {
-  ui.status.textContent = "厨房の画像を読み込めませんでした。ページを開き直してください。";
+  ui.status.textContent = "キッチンの絵が出ませんでした。ページをひらきなおしてね。";
   ui.homeStatus.textContent = ui.status.textContent;
-  ui.start.textContent = "ページを開き直してください";
+  ui.start.textContent = "ページをひらきなおしてね";
 });
