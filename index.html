@@ -135,9 +135,17 @@ tr:nth-child(3) .rank-number { background: #f3d7bc; border-color: #c89572; color
 footer { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; color: var(--muted); font-size: 12px; }
 #status.trouble { color: var(--red); font-weight: 850; }
 #stamp { position: absolute; right: 0; top: -28px; z-index: 1; padding: 3px 9px; color: var(--teal); border: 3px double currentColor; border-radius: 5px; background: var(--paper); font-weight: 900; transform: rotate(-8deg); pointer-events: none; }
-body[data-screen="opening"] #kitchen { visibility: hidden; }
-body[data-screen="opening"] .curtain { padding: 0; background: radial-gradient(ellipse at 50% 43%, #745137, #382119 78%); }
-#opening { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+body[data-screen="opening"] #timer { display: none; }
+body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
+#opening { position: absolute; inset: 0; isolation: isolate; overflow: hidden; border-radius: inherit; }
+@property --kitchen-reveal { syntax: "<percentage>"; inherits: false; initial-value: -26%; }
+.opening-haze { position: absolute; inset: 0; overflow: hidden; background: #61422e; mask-image: radial-gradient(ellipse at center, transparent var(--kitchen-reveal), #000 calc(var(--kitchen-reveal) + 18%)); animation: reveal-kitchen .84s cubic-bezier(.48,.04,.22,1) both; }
+.opening-haze::before { content: ""; position: absolute; inset: -15px; background: radial-gradient(ellipse at 50% 7%, #ffd08cd9, #e6a16d44 43%, #42291ca8 88%), linear-gradient(0deg, #6045383d, #57392567), url("assets/kitchen.webp?v=chibi") center / 100% 100% no-repeat; filter: blur(11px) saturate(.9) sepia(.24); }
+@keyframes reveal-kitchen {
+  0%, 18% { --kitchen-reveal: -26%; opacity: 1; }
+  76% { opacity: .93; }
+  100% { --kitchen-reveal: 115%; opacity: 0; }
+}
 .doorway { position: absolute; inset: 15% 22% 10%; perspective: 1000px; }
 .doorway::before, .doorway::after { content: ""; position: absolute; top: 18%; bottom: -2%; width: 2.5%; z-index: -1; border: 1px solid #60351e; background: linear-gradient(90deg, #683a22, #b27649 45%, #855130); }
 .doorway::before { right: 100%; }
@@ -203,7 +211,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: radial-gradient(e
         </div>
       </div>
     </section>
-    <div id="opening" aria-hidden="true" hidden><div class="doorway"><div class="door-leaf door-left"><div class="door-panel"></div></div><div class="door-leaf door-right"><div class="door-panel"></div></div></div></div>
+    <div id="opening" aria-hidden="true" hidden><div class="opening-haze"></div><div class="doorway"><div class="door-leaf door-left"><div class="door-panel"></div></div><div class="door-leaf door-right"><div class="door-panel"></div></div></div></div>
     <section id="pauseCard" class="session-card" aria-labelledby="pauseTitle" hidden>
       <h2 id="pauseTitle">ひと休み</h2><p>準備ができたら営業を再開しよう。</p>
       <button id="resume" type="button">営業を再開</button>
