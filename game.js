@@ -8,6 +8,34 @@ const orders = [
   ["カレーライス", ["じゃがいも", "jagaimo", "zyagaimo"], ["にこむ", "nikomu"], ["カレーライス", "kare-raisu"]],
   ["ハンバーグ", ["ひきにく", "hikiniku"], ["やきあげる", "yakiageru"], ["デミグラス", "demigurasu"]],
 ];
+const extraPrompts = [
+  [[["チキンライス", "chikinraisu", "tikinraisu"]], [["うすやき", "usuyaki"]], [["もりつけ", "moritsuke"]]],
+  [[["パスタ", "pasuta"]], [["ケチャップ", "kechappu", "ketyappu"]], [["こなチーズ", "konachi-zu", "konati-zu"]]],
+  [[["にんじん", "ninjin", "ninzin"]], [["カレー", "kare-"]], [["ごはん", "gohan"]]],
+  [[["たまねぎ", "tamanegi"]], [["フライパン", "furaipan"]], [["ソース", "so-su"]]],
+];
+const roundDuration = 180000;
+const recordKey = "typing-kitchen-round-v1";
+
+function spellingOptions(prompt) {
+  const [label, ...spellings] = prompt;
+  const options = new Set(spellings);
+  for (const [first, second] of [["shi", "si"], ["chi", "ti"], ["tsu", "tu"], ["ji", "zi"]]) {
+    for (const spelling of [...options]) {
+      options.add(spelling.replaceAll(first, second));
+      options.add(spelling.replaceAll(second, first));
+    }
+  }
+  return [label, ...options];
+}
+
+function choosePrompts(order, completed) {
+  return orders[order].slice(1).map((original, stage) => {
+    const variants = [original, ...extraPrompts[order][stage]];
+    return spellingOptions(variants[Math.floor(completed / orders.length) % variants.length]);
+  });
+}
+
 const trialOrders = new Map([["omurice", 0], ["napolitan", 1], ["curry", 2], ["hamburg", 3]]);
 const firstOrder = trialOrders.get(new URLSearchParams(window.location.search).get("order")) ?? 0;
 const stages = ["仕込み", "加熱", "盛り付け"];
@@ -41,6 +69,9 @@ const slots = [802, 961, 1120, 1279];
 const state = {
   order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null,
   trouble: 0, mistakeTime: -Infinity, easing: null,
+  phase: "ready", remaining: roundDuration, lastFrame: null, correct: 0, misses: 0,
+  prompts: choosePrompts(firstOrder, 0),
+
 };
 let art;
 let time = 0;
@@ -60,12 +91,12 @@ const chefStations = [
 function showPrompt() {
   ui.order.textContent = orders[state.order][0];
   ui.stage.textContent = `${state.step + 1} / 3　${stages[state.step]}`;
-  ui.prompt.textContent = orders[state.order][state.step + 1][0];
+  ui.prompt.textContent = state.prompts[state.step][0];
   showRoman();
 }
 
 function showRoman() {
-  const [, ...options] = orders[state.order][state.step + 1];
+  const [, ...options] = state.prompts[state.step];
   const target = options.find(option => option.startsWith(state.typed));
   ui.typed.textContent = state.typed;
   ui.next.textContent = target[state.typed.length] || "";
@@ -78,22 +109,26 @@ ui.key.addEventListener("keydown", event => {
   const letter = /^[a-z-]$/i.test(event.key);
   if (!letter && event.key !== "Backspace") return;
   event.preventDefault();
-  if (!art || state.deliveryTime !== null) return;
+  if (!art || state.phase !== "playing") return;
+  updateClock(performance.now());
+  if (state.phase !== "playing" || state.deliveryTime !== null) return;
   if (event.key === "Backspace") {
     state.typed = state.typed.slice(0, -1);
     showRoman();
     return;
   }
   const candidate = state.typed + event.key.toLowerCase();
-  const [, ...options] = orders[state.order][state.step + 1];
+  const [, ...options] = state.prompts[state.step];
   if (!options.some(option => option.startsWith(candidate))) {
     if (event.repeat) return;
+    state.misses++;
     reportMistake();
     ui.key.classList.add("bad");
     clearTimeout(flash);
     flash = setTimeout(() => ui.key.classList.remove("bad"), 200);
     return;
   }
+  state.correct++;
   state.typed = candidate;
   showRoman();
   if (!options.includes(candidate)) return;
@@ -115,10 +150,132 @@ ui.key.addEventListener("keydown", event => {
   ui.key.value = "";
 });
 ui.key.addEventListener("input", () => {
-  if (state.deliveryTime === null) showRoman();
+  if (state.phase === "playing" && state.deliveryTime === null) showRoman();
   else ui.key.value = "";
 });
 ui.kitchen.addEventListener("click", () => ui.key.focus());
+
+function readRecord() {
+  try {
+    const record = JSON.parse(localStorage.getItem(recordKey));
+    return record && Number.isInteger(record.last) && record.last >= 0
+      && Number.isInteger(record.best) && record.best >= record.last ? record : null;
+  } catch {
+    return null;
+  }
+}
+
+function showSessionCard(card) {
+  ui.curtain.hidden = card === null;
+  for (const id of ["welcome", "pauseCard", "results"]) ui[id].hidden = id !== card;
+}
+
+function updateTimer() {
+  const seconds = Math.ceil(state.remaining / 1000);
+  ui.timer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  ui.timer.classList.toggle("urgent", state.remaining > 0 && state.remaining <= 30000);
+}
+
+function startRound() {
+  if (!art || !["ready", "finished"].includes(state.phase)) return;
+  Object.assign(state, {
+    order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null,
+    trouble: 0, mistakeTime: -Infinity, easing: null, correct: 0, misses: 0,
+    remaining: roundDuration, phase: "playing", lastFrame: performance.now(),
+    prompts: choosePrompts(firstOrder, 0),
+  });
+  time = 0;
+  chefs.forEach(chef => { chef.move = null; });
+  cueChefs(0);
+  clearTimeout(flash);
+  ui.key.classList.remove("bad");
+  ui.status.classList.remove("trouble");
+  ui.served.textContent = "00";
+  ui.status.textContent = "営業開始！　ローマ字で料理をつくろう";
+  ui.key.disabled = false;
+  ui.pause.hidden = false;
+  showSessionCard(null);
+  showPrompt();
+  updateTimer();
+  ui.key.focus();
+}
+
+function updateClock(now) {
+  if (state.phase !== "playing") return;
+  const delta = Math.max(0, now - state.lastFrame);
+  state.lastFrame = now;
+  const elapsed = Math.min(delta, state.remaining);
+  state.remaining = Math.max(0, state.remaining - elapsed);
+  time += elapsed;
+  updateTimer();
+  if (state.remaining === 0) finishRound();
+}
+
+function finishRound() {
+  if (state.phase !== "playing") return;
+  // A dish counts once it lands on the counter, including during the return walk.
+  if (state.deliveryTime !== null && time - state.deliveryTime >= deliveryPhases.place) {
+    state.served++;
+  }
+  state.phase = "finished";
+  ui.key.disabled = true;
+  ui.pause.hidden = true;
+  ui.served.textContent = String(state.served).padStart(2, "0");
+  ui.resultServed.textContent = `${state.served}皿`;
+  const total = state.correct + state.misses;
+  ui.resultAccuracy.textContent = total ? `${Math.round(state.correct / total * 100)}%` : "—";
+  ui.resultMisses.textContent = `${state.misses}回`;
+  const previous = readRecord();
+  const best = Math.max(previous?.best ?? 0, state.served);
+  const difference = previous ? state.served - previous.last : 0;
+  const comparison = previous ? `前回 ${previous.last}皿（${difference > 0 ? "+" : ""}${difference}皿）　自己ベスト ${best}皿` : `はじめての記録　${state.served}皿`;
+  ui.comparison.textContent = comparison;
+  try {
+    localStorage.setItem(recordKey, JSON.stringify({ last: state.served, best }));
+  } catch {
+    ui.comparison.textContent += "　このブラウザでは記録を保存できませんでした";
+  }
+  ui.status.classList.remove("trouble");
+  ui.status.textContent = "3分間、おつかれさま！";
+  showSessionCard("results");
+  ui.retry.focus();
+}
+
+function pauseRound() {
+  if (state.phase !== "playing") return;
+  updateClock(performance.now());
+  if (state.phase !== "playing") return;
+  state.phase = "paused";
+  ui.key.disabled = true;
+  ui.pause.hidden = true;
+  ui.status.textContent = "営業を一時停止しています";
+  showSessionCard("pauseCard");
+  ui.resume.focus();
+}
+
+function resumeRound() {
+  if (state.phase !== "paused") return;
+  state.phase = "playing";
+  state.lastFrame = performance.now();
+  ui.key.disabled = false;
+  ui.pause.hidden = false;
+  ui.status.textContent = "営業再開！";
+  showSessionCard(null);
+  ui.key.focus();
+}
+
+ui.start.addEventListener("click", startRound);
+ui.retry.addEventListener("click", startRound);
+ui.pause.addEventListener("click", pauseRound);
+ui.resume.addEventListener("click", resumeRound);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) pauseRound();
+});
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape") return;
+  if (state.phase === "playing") pauseRound();
+  else if (state.phase === "paused") resumeRound();
+});
 
 function reportMistake() {
   const previous = state.trouble;
@@ -479,11 +636,16 @@ function drawCounter(elapsed) {
 }
 
 function draw(timestamp) {
-  time = timestamp;
+  updateClock(timestamp);
+  if (state.phase === "finished") {
+    requestAnimationFrame(draw);
+    return;
+  }
   const elapsed = state.deliveryTime === null ? null : time - state.deliveryTime;
-  if (elapsed !== null && elapsed >= deliveryPhases.reset) {
+  if (state.phase === "playing" && elapsed !== null && elapsed >= deliveryPhases.reset) {
     state.served++;
     state.order = (firstOrder + state.served) % orders.length;
+    state.prompts = choosePrompts(state.order, state.served);
     state.step = 0;
     state.stageTime = time;
     state.deliveryTime = null;
@@ -505,7 +667,7 @@ function draw(timestamp) {
   scene.forEach(layer => layer.draw());
   ctx.drawImage(art.counter, 0, counterTop);
   drawCounter(delivery);
-  if (delivery !== null && delivery >= deliveryPhases.place) {
+  if (state.phase !== "finished" && delivery !== null && delivery >= deliveryPhases.place) {
     ui.served.textContent = String(state.served + 1).padStart(2, "0");
   }
   requestAnimationFrame(draw);
@@ -520,14 +682,16 @@ const reactionFrames = [[4, 4, 209, 252], [264, 4, 216, 252], [524, 4, 165, 252]
 const files = ["kitchen", "characters", "food", "counter", "reactions"];
 Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
-  ui.status.textContent = "ローマ字を入力して調理開始";
+  ui.status.textContent = "準備できました。営業をはじめよう";
+  ui.start.disabled = false;
+  ui.start.textContent = "営業をはじめる";
+  ui.start.focus();
   showPrompt();
   requestAnimationFrame(timestamp => {
-    time = timestamp;
     cueChefs(state.step);
     draw(timestamp);
   });
 }).catch(() => {
   ui.status.textContent = "厨房の画像を読み込めませんでした。ページを開き直してください。";
+  ui.start.textContent = "ページを開き直してください";
 });
-

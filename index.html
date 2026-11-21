@@ -40,22 +40,63 @@ footer { display: flex; justify-content: space-between; padding: 8px 0; color: v
   #prompt { font-size: clamp(18px, 5vw, 30px); }
 }
 #status.trouble { color: #ffd098; font-weight: bold; }
+[hidden] { display: none !important; }
+.scene { position: relative; }
+.session-controls { display: flex; gap: 18px; align-items: center; }
+#timer { font: bold 24px ui-monospace, monospace; color: var(--gold); font-variant-numeric: tabular-nums; }
+#timer.urgent { color: #ff9c82; }
+button { border: 1px solid #85755e; border-radius: 5px; background: #edbf84; color: #242321; padding: 10px 20px; font: inherit; font-weight: bold; cursor: pointer; }
+button:hover { background: #ffcf90; }
+button:focus-visible { outline: 3px solid #f8e2b6; outline-offset: 3px; }
+button:disabled { opacity: .6; cursor: wait; }
+#pause { padding: 5px 10px; background: #2c3132; color: #f1ebe0; border-color: #626966; font-size: 12px; }
+.curtain { position: absolute; inset: 0; background: rgba(18,23,24,.70); display: grid; place-items: center; border-radius: 7px 7px 0 0; }
+.session-card { width: min(520px, 90%); max-height: 96%; overflow-y: auto; text-align: center; background: #232729; border: 1px solid #8c7b61; border-radius: 10px; padding: clamp(12px, 3vw, 30px); box-shadow: 0 10px 40px #0006; }
+.session-card h2 { font-size: clamp(19px, 2.5vw, 28px); margin: 0 0 16px; }
+.session-card p { color: #d2d0c7; font-size: 14px; line-height: 1.8; margin: 12px 0; }
+.session-card .hint { font-size: 12px; color: #aeb8b4; }
+.results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 22px 0; }
+.results-grid dt { font-size: 12px; color: var(--soft); }
+.results-grid dd { margin: 7px 0 0; font-size: clamp(23px, 3vw, 36px); font-weight: bold; color: var(--gold); }
+@media (max-width: 760px) { .session-controls { gap: 8px; } #timer { font-size: 18px; } .session-card h2 { margin-bottom: 7px; } .session-card p { font-size: 12px; margin: 7px 0; } .session-card button { padding: 7px 12px; } .results-grid { margin: 12px 0; gap: 7px; } .results-grid dt { font-size: 10px; } }
 </style>
 </head>
 <body>
 <main>
-  <header><h1>タイピングキッチン</h1><span class="brand">KAIRI_STUDIO</span></header>
+  <header><h1>タイピングキッチン</h1><div class="session-controls"><span class="brand">KAIRI_STUDIO</span><span id="timer" aria-label="残り時間">3:00</span><button id="pause" type="button" hidden>一時停止</button></div></header>
+  <div class="scene">
   <canvas id="kitchen" width="1440" height="672" aria-label="奥から仕込み、加熱、盛り付けの調理台が並ぶ厨房"></canvas>
+  <div id="curtain" class="curtain">
+    <section id="welcome" class="session-card" aria-labelledby="welcomeTitle">
+      <h2 id="welcomeTitle">3分間のキッチン営業</h2>
+      <p>3つのお題を打って、料理をお届け。<br>ミスで慌てる厨房を、正解で立て直そう。</p>
+      <p class="hint">半角英字で入力・Enterは不要</p>
+      <button id="start" type="button" disabled>厨房を準備しています…</button>
+    </section>
+    <section id="pauseCard" class="session-card" aria-labelledby="pauseTitle" hidden>
+      <h2 id="pauseTitle">ひと休み</h2><p>準備ができたら営業を再開しよう。</p>
+      <button id="resume" type="button">営業を再開</button>
+    </section>
+    <section id="results" class="session-card" aria-labelledby="resultTitle" hidden>
+      <h2 id="resultTitle">本日の営業終了</h2>
+      <dl class="results-grid">
+        <div><dt>お届けした料理</dt><dd id="resultServed">0皿</dd></div>
+        <div><dt>正確さ</dt><dd id="resultAccuracy">—</dd></div>
+        <div><dt>打ち間違い</dt><dd id="resultMisses">0回</dd></div>
+      </dl>
+      <p id="comparison"></p>
+      <button id="retry" type="button">もう一度、3分営業</button>
+    </section>
+  </div></div>
   <section class="console" aria-label="タイピング">
     <div><div class="caption">注文</div><h2 class="order" id="order"></h2><strong id="stage"></strong></div>
     <div class="entry"><h2 id="prompt"></h2><div id="roman" aria-hidden="true"><span id="typed"></span><span id="next"></span><span id="rest"></span></div>
-      <input id="key" aria-label="ローマ字入力欄" placeholder="半角英字で入力" autocomplete="off" spellcheck="false" inputmode="none" autofocus>
+      <input id="key" aria-label="ローマ字入力欄" placeholder="半角英字で入力" autocomplete="off" spellcheck="false" inputmode="none" disabled>
     </div>
     <div class="count"><div class="caption">提供済み</div><strong id="served">00</strong> 皿</div>
   </section>
   <footer><span id="status" role="status">厨房を準備しています…</span><span>PCの英数キーで入力</span></footer>
 </main>
-<script src="game.js?v=kitchen-visual-fix"></script>
+<script src="game.js?v=three-minute-round"></script>
 </body>
 </html>
-
