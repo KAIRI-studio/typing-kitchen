@@ -76,6 +76,56 @@ const state = {
 let art;
 let time = 0;
 let flash;
+let stampTimeout;
+let servedBellPlayed = false;
+let bellAudio;
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const soundKey = "typing-kitchen-sound";
+let soundOn = true;
+try { soundOn = localStorage.getItem(soundKey) !== "off"; } catch {}
+
+function updateSoundButton() {
+  ui.sound.textContent = soundOn ? "音あり" : "音なし";
+  ui.sound.setAttribute("aria-pressed", String(soundOn));
+}
+
+function prepareBell() {
+  if (!soundOn || !window.AudioContext) return;
+  try {
+    bellAudio ??= new AudioContext();
+    if (bellAudio.state === "suspended") bellAudio.resume().catch(() => {});
+  } catch {}
+}
+
+function ringBell() {
+  if (!soundOn || bellAudio?.state !== "running") return;
+  const start = bellAudio.currentTime;
+  for (const [frequency, volume] of [[1397, .07], [2093, .028]]) {
+    const tone = bellAudio.createOscillator();
+    const envelope = bellAudio.createGain();
+    tone.frequency.value = frequency;
+    envelope.gain.setValueAtTime(.001, start);
+    envelope.gain.exponentialRampToValueAtTime(volume, start + .012);
+    envelope.gain.exponentialRampToValueAtTime(.001, start + .36);
+    tone.connect(envelope).connect(bellAudio.destination);
+    tone.start(start);
+    tone.stop(start + .37);
+  }
+}
+
+ui.sound.addEventListener("click", () => {
+  soundOn = !soundOn;
+  updateSoundButton();
+  try { localStorage.setItem(soundKey, soundOn ? "on" : "off"); } catch {}
+  prepareBell();
+});
+updateSoundButton();
+
+function stampOrder() {
+  ui.stamp.hidden = false;
+  clearTimeout(stampTimeout);
+  stampTimeout = setTimeout(() => { ui.stamp.hidden = true; }, 480);
+}
 let completedRound = null;
 let rankingReturn = "welcome";
 let submissionBusy = false;
@@ -136,6 +186,7 @@ ui.key.addEventListener("keydown", event => {
   showRoman();
   if (!options.includes(candidate)) return;
   state.typed = "";
+  stampOrder();
   const recovered = clearTrouble();
   if (state.step < 2) {
     state.step++;
@@ -148,6 +199,7 @@ ui.key.addEventListener("keydown", event => {
     showPrompt();
     return;
   }
+  servedBellPlayed = false;
   state.deliveryTime = time;
   ui.status.textContent = recovered ? "持ち直した！　ウェイターが運びます" : "できあがり。ウェイターが運びます";
   ui.key.value = "";
@@ -170,9 +222,11 @@ function readRecord() {
 
 function showSessionCard(card) {
   ui.curtain.hidden = card === null;
-  document.body.dataset.screen = card === "welcome" ? "home" : card === "ranking" ? "ranking" : "game";
-  ui.typingConsole.hidden = card === "welcome" || card === "ranking";
-  for (const id of ["welcome", "pauseCard", "results", "ranking"]) ui[id].hidden = id !== card;
+  const screens = { welcome: "home", opening: "opening", results: "results", ranking: "ranking" };
+  document.body.dataset.screen = screens[card] ?? "game";
+  ui.typingConsole.hidden = card !== null && card !== "pauseCard";
+  if (card !== "results") ui.confetti.replaceChildren();
+  for (const id of ["welcome", "opening", "pauseCard", "results", "ranking"]) ui[id].hidden = id !== card;
 }
 
 function updateTimer() {
@@ -181,8 +235,19 @@ function updateTimer() {
   ui.timer.classList.toggle("urgent", state.remaining > 0 && state.remaining <= 30000);
 }
 
+function openForBusiness() {
+  if (!art || submissionBusy || !["ready", "finished"].includes(state.phase)) return;
+  prepareBell();
+  state.phase = "opening";
+  ui.timer.textContent = "3:00";
+  ui.timer.classList.remove("urgent");
+  showSessionCard("opening");
+  if (reducedMotion.matches) startRound();
+  else setTimeout(startRound, 650);
+}
+
 function startRound() {
-  if (!art || !["ready", "finished"].includes(state.phase)) return;
+  if (state.phase !== "opening") return;
   savePlayerName(ui.playerName.value);
   completedRound = null;
   ui.submitScore.disabled = true;
@@ -198,6 +263,7 @@ function startRound() {
   cueChefs(0);
   clearTimeout(flash);
   ui.key.classList.remove("bad");
+  ui.stamp.hidden = true;
   ui.status.classList.remove("trouble");
   ui.served.textContent = "00";
   ui.status.textContent = "営業開始！　ローマ字で料理をつくろう";
@@ -207,6 +273,7 @@ function startRound() {
   showPrompt();
   updateTimer();
   ui.key.focus();
+  if (document.hidden) pauseRound();
 }
 
 function updateClock(now) {
@@ -246,7 +313,11 @@ function finishRound() {
   const best = Math.max(previous?.best ?? 0, state.served);
   const difference = previous ? state.served - previous.last : 0;
   const comparison = previous ? `前回 ${previous.last}皿（${difference > 0 ? "+" : ""}${difference}皿）　自己ベスト ${best}皿` : `はじめての記録　${state.served}皿`;
-  ui.comparison.textContent = comparison;
+  const newBest = state.served > (previous?.best ?? 0);
+  ui.comparison.textContent = newBest ? `自己ベスト更新！　${best}皿` : comparison;
+  ui.comparison.classList.toggle("best", newBest);
+  showResultDishes();
+  if (newBest && !reducedMotion.matches) celebrateBest();
   try {
     localStorage.setItem(recordKey, JSON.stringify({ last: state.served, best }));
   } catch {
@@ -282,8 +353,8 @@ function resumeRound() {
   ui.key.focus();
 }
 
-ui.start.addEventListener("click", startRound);
-ui.retry.addEventListener("click", startRound);
+ui.start.addEventListener("click", openForBusiness);
+ui.retry.addEventListener("click", openForBusiness);
 ui.pause.addEventListener("click", pauseRound);
 ui.resume.addEventListener("click", resumeRound);
 document.addEventListener("visibilitychange", () => {
@@ -367,7 +438,14 @@ async function openRanking(from = "welcome") {
       const values = [String(index + 1), entry.name, `${entry.served}皿`, `${(entry.accuracy / 100).toFixed(1)}%`];
       values.forEach((value, column) => {
         const cell = document.createElement("td");
-        cell.textContent = value;
+        if (column === 0) {
+          const badge = document.createElement("span");
+          badge.className = "rank-number";
+          badge.textContent = value;
+          cell.append(badge);
+        } else {
+          cell.textContent = value;
+        }
         if (mine && column === 1) {
           const mark = document.createElement("span");
           mark.className = "my-mark";
@@ -482,16 +560,16 @@ function progress(elapsed, duration) {
   return Math.max(0, Math.min(1, elapsed / duration));
 }
 
-function drawSprite(sheet, frame, x, y, maxWidth, maxHeight, direction = 1, anchorY = .5) {
+function drawSprite(sheet, frame, x, y, maxWidth, maxHeight, direction = 1, anchorY = .5, surface = ctx) {
   const [sx, sy, sw, sh] = frame;
   const scale = Math.min(maxWidth / sw, maxHeight / sh);
   const w = sw * scale;
   const h = sh * scale;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(direction, 1);
-  ctx.drawImage(sheet, sx, sy, sw, sh, -w / 2, -h * anchorY, w, h);
-  ctx.restore();
+  surface.save();
+  surface.translate(x, y);
+  surface.scale(direction, 1);
+  surface.drawImage(sheet, sx, sy, sw, sh, -w / 2, -h * anchorY, w, h);
+  surface.restore();
 }
 
 function drawFood(order, stage, x, y, width, height) {
@@ -805,6 +883,11 @@ function draw(timestamp) {
     return;
   }
   const elapsed = state.deliveryTime === null ? null : time - state.deliveryTime;
+  if (state.phase === "playing" && elapsed !== null && elapsed >= deliveryPhases.place && !servedBellPlayed) {
+    servedBellPlayed = true;
+    ringBell();
+    ui.status.textContent = "お届け完了！";
+  }
   if (state.phase === "playing" && elapsed !== null && elapsed >= deliveryPhases.reset) {
     state.served++;
     state.order = (firstOrder + state.served) % orders.length;
@@ -842,13 +925,55 @@ const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3
 
 const reactionFrames = [[4, 4, 209, 252], [264, 4, 216, 252], [524, 4, 165, 252]];
 
+function paintHomeCrew() {
+  const surface = ui.crewArt.getContext("2d");
+  surface.fillStyle = "#6b8d7260";
+  surface.beginPath();
+  surface.ellipse(300, 317, 246, 26, 0, 0, Math.PI * 2);
+  surface.fill();
+  drawSprite(art.characters, characterFrames[3], 472, 307, 168, 231, -1, 1, surface);
+  drawSprite(art.characters, characterFrames[0], 127, 310, 168, 222, 1, 1, surface);
+  drawSprite(art.characters, characterFrames[8], 299, 332, 175, 238, -1, 1, surface);
+  drawSprite(art.food, foodFrames[2], 252, 239, 112, 66, 1, .5, surface);
+}
+
+function showResultDishes() {
+  const surface = ui.resultDishes.getContext("2d");
+  surface.clearRect(0, 0, ui.resultDishes.width, ui.resultDishes.height);
+  const count = Math.min(state.served, 5);
+  ui.resultDishes.hidden = count === 0;
+  const paint = position => {
+    const order = (firstOrder + position) % orders.length;
+    const x = 250 + (position - (count - 1) / 2) * 93;
+    drawSprite(art.food, foodFrames[order * 3 + 2], x, 37, 89, 66, 1, .5, surface);
+  };
+  const round = completedRound;
+  for (let position = 0; position < count; position++) {
+    if (position === 0 || reducedMotion.matches) paint(position);
+    else setTimeout(() => { if (completedRound === round) paint(position); }, position * 110);
+  }
+}
+
+function celebrateBest() {
+  const colors = ["#ba3328", "#238174", "#f0aa35", "#ec8672"];
+  const pieces = Array.from({ length: 24 }, (_, index) => {
+    const piece = document.createElement("i");
+    piece.style.setProperty("--x", `${(index * 31 % 96) + 2}%`);
+    piece.style.setProperty("--color", colors[index % colors.length]);
+    piece.style.setProperty("--delay", `${index % 7 * 35}ms`);
+    return piece;
+  });
+  ui.confetti.replaceChildren(...pieces);
+}
+
 const files = ["kitchen", "characters", "food", "counter", "reactions"];
 Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
   ui.status.textContent = "準備できました。営業をはじめよう";
   ui.start.disabled = false;
-  ui.start.textContent = "営業をはじめる";
-  ui.start.focus();
+  ui.start.textContent = "開店する";
+  paintHomeCrew();
+  if (document.activeElement === document.body) ui.start.focus();
   showPrompt();
   requestAnimationFrame(timestamp => {
     cueChefs(state.step);
@@ -856,5 +981,6 @@ Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(im
   });
 }).catch(() => {
   ui.status.textContent = "厨房の画像を読み込めませんでした。ページを開き直してください。";
+  ui.nameStatus.textContent = ui.status.textContent;
   ui.start.textContent = "ページを開き直してください";
 });

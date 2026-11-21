@@ -7,111 +7,158 @@
 <title>タイピングキッチン | KAIRI_studio</title>
 <style>
 * { box-sizing: border-box; }
-:root { color-scheme: dark; --gold: #edbf84; --soft: #b4b9b6; }
-body { margin: 0; background: #171a1b; color: #f1ebe0; font-family: "Yu Gothic UI", Meiryo, sans-serif; }
-main { width: min(calc(100% - 48px), 1320px, calc((100svh - 235px) * 2.14)); min-width: 720px; margin: 0 auto; }
-header { display: flex; justify-content: space-between; align-items: baseline; padding: 15px 0 11px; }
-h1 { font-size: 20px; margin: 0; }
-.brand { color: var(--soft); font: 12px ui-monospace, monospace; letter-spacing: .13em; }
-canvas { display: block; width: 100%; aspect-ratio: 15 / 7; border: 1px solid #515654; border-radius: 7px 7px 0 0; background: #343838; }
-.console { display: grid; grid-template-columns: minmax(158px, 1fr) 2fr minmax(110px, 1fr); align-items: center; gap: 12px; min-height: 128px; padding: 10px 24px; background: #232729; border: 1px solid #515654; border-top: 0; border-radius: 0 0 7px 7px; }
-.order { margin: 3px 0 10px; font-size: 17px; }
-.caption { color: var(--soft); font-size: 11px; font-weight: bold; letter-spacing: .1em; }
-#stage, #served, #typed { color: var(--gold); }
-.entry { text-align: center; }
-#prompt { margin: 0; font-size: clamp(28px, 3.6vw, 42px); line-height: 1.2; }
-#roman { font: bold 20px ui-monospace, monospace; letter-spacing: .14em; color: var(--soft); min-height: 25px; }
-#next { color: white; border-bottom: 2px solid var(--gold); }
-#key { width: min(220px, 100%); margin-top: 6px; padding: 4px 8px; border: 1px solid #626966; border-radius: 4px; background: #191c1d; color: white; text-align: center; }
-#key:focus { outline: 1px solid #b69972; }
-#key.bad { background: #592f2d; outline-color: #e38676; }
-.count { text-align: right; white-space: nowrap; }
-#served { font: bold 27px ui-monospace, monospace; }
-footer { display: flex; justify-content: space-between; padding: 8px 0; color: var(--soft); font-size: 12px; }
-@media (max-width: 760px) {
-  main { min-width: 0; width: calc(100% - 20px); }
-  header { padding-block: 9px; }
-  h1 { font-size: 15px; }
-  .brand, .caption, footer { font-size: 10px; }
-  .console { grid-template-columns: minmax(70px, 1fr) 1.7fr minmax(54px, .75fr); min-height: 88px; gap: 6px; padding: 8px; }
-  .order { font-size: 12px; }
-  #stage, .count { font-size: 11px; }
-  #served, #roman { font-size: 16px; }
-  #prompt { font-size: clamp(18px, 5vw, 30px); }
+:root {
+  color-scheme: light;
+  --ink: #392622;
+  --muted: #73554b;
+  --paper: #fff8e8;
+  --red: #b93229;
+  --teal: #23645b;
+  --line: #e8d3b4;
+  --honey: #ffcd76;
 }
-#status.trouble { color: #ffd098; font-weight: bold; }
+body { margin: 0; color: var(--ink); background: #f5e6cc; font-family: "Yu Gothic UI", Meiryo, sans-serif; }
+main { width: min(calc(100% - 40px), 1320px, max(780px, calc((100svh - 220px) * 2.14))); margin: 0 auto; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 58px; }
+h1 { margin: 0; color: var(--red); font-size: clamp(15px, 2vw, 23px); font-weight: 900; }
+.brand { color: var(--teal); font: 700 12px ui-monospace, monospace; letter-spacing: .12em; }
 [hidden] { display: none !important; }
-.scene { position: relative; }
-.session-controls { display: flex; gap: 18px; align-items: center; }
-#timer { font: bold 24px ui-monospace, monospace; color: var(--gold); font-variant-numeric: tabular-nums; }
-#timer.urgent { color: #ff9c82; }
-button { border: 1px solid #85755e; border-radius: 5px; background: #edbf84; color: #242321; padding: 10px 20px; font: inherit; font-weight: bold; cursor: pointer; }
-button:hover { background: #ffcf90; }
-button:focus-visible { outline: 3px solid #f8e2b6; outline-offset: 3px; }
-button:disabled { opacity: .6; cursor: wait; }
-#pause { padding: 5px 10px; background: #2c3132; color: #f1ebe0; border-color: #626966; font-size: 12px; }
-.curtain { position: absolute; inset: 0; background: rgba(18,23,24,.70); display: grid; place-items: center; border-radius: 7px 7px 0 0; }
-.session-card { width: min(520px, 90%); max-height: 96%; overflow-y: auto; text-align: center; background: #232729; border: 1px solid #8c7b61; border-radius: 10px; padding: clamp(12px, 3vw, 30px); box-shadow: 0 10px 40px #0006; }
-.session-card h2 { font-size: clamp(19px, 2.5vw, 28px); margin: 0 0 16px; }
-.session-card p { color: #d2d0c7; font-size: 14px; line-height: 1.8; margin: 12px 0; }
-.session-card .hint { font-size: 12px; color: #aeb8b4; }
-.results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 22px 0; }
-.results-grid dt { font-size: 12px; color: var(--soft); }
-.results-grid dd { margin: 7px 0 0; font-size: clamp(23px, 3vw, 36px); font-weight: bold; color: var(--gold); }
-@media (max-width: 760px) { .session-controls { gap: 8px; } #timer { font-size: 18px; } .session-card h2 { margin-bottom: 7px; } .session-card p { font-size: 12px; margin: 7px 0; } .session-card button { padding: 7px 12px; } .results-grid { margin: 12px 0; gap: 7px; } .results-grid dt { font-size: 10px; } }
-.scene { min-height: 440px; }
-.curtain { backdrop-filter: blur(1.5px); padding: 18px; }
-#welcome { width: min(590px, 96%); text-align: left; padding: clamp(20px, 2.4vw, 28px); background: rgba(28,35,36,.96); }
-#welcomeTitle { font-size: clamp(34px, 4.4vw, 52px); line-height: 1.05; letter-spacing: .03em; color: #f2dab9; margin: 8px 0 14px; }
-.home-eyebrow { color: #d9b687 !important; font-size: 12px !important; letter-spacing: .13em; margin: 0 !important; }
-.name-label { display: block; font-size: 14px; text-align: left; margin: 18px 0 8px; }
-.name-label span { font-size: 12px; color: #aeb8b4; margin-left: 8px; }
-.name-input { box-sizing: border-box; width: 100%; min-width: 0; color: #f1ebe0; background: #171e20; border: 1px solid #687775; border-radius: 5px; padding: 10px 12px; font: inherit; font-size: 16px; }
-.name-input:focus { outline: 2px solid #edbf84; outline-offset: 2px; }
-.card-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 15px 0 0; }
+.scene { position: relative; isolation: isolate; }
+#kitchen { display: block; width: 100%; aspect-ratio: 15 / 7; border: 3px solid #793f30; border-radius: 18px 18px 0 0; background: #343838; }
+.session-controls { display: flex; gap: 12px; align-items: center; }
+#sound { font-size: 12px; padding: 7px 10px; }
+#timer { color: var(--teal); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; font: bold 23px ui-monospace, monospace; }
+#timer.urgent { background: #ffe0d2; color: #9c2520; }
+body:is([data-screen="home"], [data-screen="ranking"], [data-screen="results"]) #timer { display: none; }
+button { border: 1px solid transparent; border-radius: 10px; background: var(--red); color: #fffaf0; padding: 11px 17px; font: inherit; font-weight: 800; cursor: pointer; }
+button:hover { background: #9c2620; }
+button:focus-visible, input:focus-visible, .ranking-scroll:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+button:disabled { opacity: .6; cursor: default; }
+.secondary, #pause { background: #e1efe4; color: #1e584e; border-color: #b5d4c5; }
+.secondary:hover, #pause:hover { background: #c9e4d6; }
+#pause { padding: 7px 12px; font-size: 12px; }
+.text-button { display: inline-block; background: transparent; color: var(--teal); padding: 7px 10px; font-size: 13px; }
+.text-button:hover { background: #e1efe4; }
+.curtain { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: #37251dcc; border-radius: 18px 18px 0 0; }
+.session-card { width: min(100%, 530px); max-height: 100%; overflow: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: 0 7px 0 #331a1744; text-align: center; }
+.session-card h2 { margin: 0; font-size: clamp(22px, 3vw, 33px); line-height: 1.18; }
+.session-card p { margin: 9px 0; line-height: 1.6; font-size: 14px; }
+.session-card .hint { font-size: 12px; color: var(--muted); }
+.card-actions { display: flex; justify-content: center; align-items: stretch; flex-wrap: wrap; gap: 9px; margin: 13px 0 6px; }
+.name-label { display: block; font-size: 13px; font-weight: 800; margin: 14px 0 5px; text-align: left; }
+.name-label span { color: var(--muted); font-size: 12px; font-weight: 500; margin-inline-start: .45em; }
+.name-input { width: 100%; min-width: 0; border: 1px solid #c7a78d; border-radius: 8px; background: #fffcf6; color: var(--ink); padding: 9px 11px; font: inherit; font-size: 16px; }
+.form-status { color: var(--teal); font-weight: 700; }
+.form-status:empty, .hint:empty { display: none; }
+.form-status.error, .ranking-message.error { color: #992c23; }
+body[data-screen="home"] .curtain { position: relative; padding: 0; display: block; background: transparent; }
+body[data-screen="home"] #kitchen, body[data-screen="home"] footer, body[data-screen="ranking"] footer, body[data-screen="results"] footer { display: none; }
+#welcome { position: relative; width: 100%; display: grid; grid-template-columns: 1fr 1.03fr; padding: 0; text-align: left; border: 2px solid #b36b51; border-top: 18px solid transparent; background: linear-gradient(var(--paper), var(--paper)) padding-box, repeating-linear-gradient(90deg, #b93229 0 32px, #ffdfae 32px 64px) border-box; box-shadow: 0 7px 0 #dcc19b; }
+.welcome-copy { padding: clamp(19px, 3.5vw, 52px); align-self: center; }
+#welcomeTitle { color: var(--red); font-size: clamp(35px, 5.6vw, 78px); line-height: .99; font-weight: 950; letter-spacing: -.055em; margin: 8px 0 14px; }
 #welcome .card-actions { justify-content: flex-start; }
-.secondary { background: #303c3c; color: #f1e4ce; border-color: #697875; }
-.secondary:hover { background: #43524f; }
-.text-button { display: block; background: transparent; border-color: transparent; color: #d7c7ad; font-size: 13px; margin: 7px auto 0; padding: 7px 12px; }
-.text-button:hover { background: #394140; }
-#nameStatus:empty { display: none; }
-.form-status { min-height: 1.5em; font-size: 13px !important; margin: 7px 0 !important; color: #e4bd88 !important; }
-.form-status.error, .ranking-message.error { color: #ffb4a3 !important; }
-.submit-form { border-top: 1px solid #4b5755; margin-top: 16px; padding-top: 2px; }
-.submit-form .name-label { font-size: 13px; margin-top: 12px; }
+#welcome .card-actions button { flex: 1 0 auto; }
+#start { box-shadow: 0 3px 0 #822821; }
+.home-eyebrow { color: var(--teal); font-weight: 850; }
+.home-art { display: grid; place-items: center; min-width: 0; background: radial-gradient(ellipse at 50% 44%, #fdf9e866 0 48%, transparent 49%), #a8ccb7; border-left: 1px solid #92b7a2; padding: 12px; }
+#crewArt { display: block; width: 100%; height: auto; }
+body:is([data-screen="ranking"], [data-screen="results"]) #kitchen { min-height: min(570px, 78svh); object-fit: cover; border-radius: 18px; }
+body:is([data-screen="ranking"], [data-screen="results"]) .curtain { border-radius: 18px; }
+#results { width: min(100%, 590px); border-top: 8px solid var(--red); }
+#resultTitle { color: var(--red); }
+#resultDishes { width: min(100%, 295px); height: auto; display: block; margin: 2px auto; }
+.results-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; margin: 10px 0; }
+.results-grid > div { padding: 8px 4px; border-radius: 10px; background: #f8e9ce; }
+.results-grid > div:first-child { background: #ffe1ba; }
+.results-grid dt { font-size: 12px; color: var(--muted); }
+.results-grid dd { margin: 2px 0 0; font-size: clamp(20px, 3vw, 31px); font-weight: 900; color: var(--red); }
+#comparison.best { color: #185849; font-weight: 850; }
+.submit-form { border-top: 2px dashed var(--line); margin-top: 9px; }
 .submit-line { display: flex; gap: 8px; }
-.submit-line button { white-space: nowrap; padding: 7px 12px; font-size: 13px; }
-.ranking-card { width: min(820px, 97%); text-align: left; display: flex; flex-direction: column; height: min(540px, 98%); padding: 24px; }
-.ranking-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.ranking-heading h2 { margin: 7px 0 0; }
-.ranking-heading button { font-size: 14px; padding: 7px 15px; }
-.ranking-rule { font-size: 13px !important; margin: 14px 0 !important; }
-.ranking-scroll { overflow-y: auto; min-height: 80px; flex: 1; background: #1b2324; border: 1px solid #42514e; border-radius: 6px; }
-.ranking-scroll table { width: 100%; border-collapse: collapse; font-size: 16px; }
-.ranking-scroll th { position: sticky; top: 0; background: #35433f; font-size: 12px; padding: 11px 13px; color: #bfcac0; text-align: left; }
-.ranking-scroll td { padding: 12px 13px; border-bottom: 1px solid #35413d; }
-.ranking-scroll th:nth-child(n+3), .ranking-scroll td:nth-child(n+3) { text-align: right; }
-.ranking-scroll td:first-child { width: 65px; color: #dbb47d; font: bold 19px ui-monospace, monospace; }
-.ranking-scroll tr.is-current { background: #38463d; }
-.ranking-scroll .my-mark { color: #d9bd8b; font-size: 11px; margin-left: 8px; }
-.ranking-message { padding: 22px; color: #c6d0c7; font-size: 14px !important; text-align: center; }
-.ranking-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.ranking-footer .text-button { margin: 0; }
-#results { width: min(620px, 96%); }
-body[data-screen="home"] #timer, body[data-screen="ranking"] #timer { display: none; }
-@media (max-width: 760px) { .scene { min-height: 430px; } .scene canvas { height: 430px; object-fit: cover; } .curtain { padding: 8px; } .ranking-card { padding: 14px; } .ranking-scroll td, .ranking-scroll th { padding: 10px 8px; } .name-label span { display: block; margin: 5px 0 0; } .submit-line { flex-wrap: wrap; } .submit-line button { width: 100%; } .session-card { max-height: 99%; } }
+.submit-line button { white-space: nowrap; font-size: 13px; }
+.ranking-card { width: min(100%, 760px); height: min(505px, 100%); display: flex; flex-direction: column; text-align: left; border: 6px solid #93614a; }
+.ranking-heading, .ranking-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ranking-heading h2 { color: var(--teal); }
+.ranking-heading button, .ranking-footer button { flex-shrink: 0; }
+.ranking-scroll { overflow: auto; min-height: 70px; flex: 1; border: 1px solid var(--line); border-radius: 9px; background: #fffdf6; }
+.ranking-scroll table { width: 100%; border-collapse: collapse; }
+.ranking-scroll th { position: sticky; top: 0; background: #dfede3; color: #235b4f; font-size: 12px; text-align: left; }
+.ranking-scroll :is(th,td) { padding: 9px 13px; }
+.ranking-scroll td { border-bottom: 1px solid var(--line); }
+.ranking-scroll :is(th,td):nth-child(n+3) { text-align: right; }
+.ranking-scroll td:first-child { color: var(--red); font-weight: 900; width: 68px; }
+.rank-number { display: inline-grid; place-items: center; min-width: 32px; min-height: 29px; border-radius: 50%; border: 1px solid transparent; }
+tr:nth-child(1) .rank-number { background: #ffe19d; border-color: #ce9b45; color: #6c3d10; }
+tr:nth-child(2) .rank-number { background: #e5eff1; border-color: #a5bfc4; color: #304b55; }
+tr:nth-child(3) .rank-number { background: #f3d7bc; border-color: #c89572; color: #753e23; }
+.ranking-scroll tr.is-current { background: #e3f1e5; }
+.my-mark { color: var(--teal); font-size: 11px; margin-left: 6px; font-weight: 800; }
+.ranking-message { text-align: center; padding: 10px; }
+.console { position: relative; display: grid; grid-template-columns: minmax(94px, 1fr) 2fr minmax(77px, 1fr); align-items: center; gap: 8px; min-height: 121px; padding: 9px 20px; background: var(--paper); border: 2px solid #b36b51; border-top: 0; border-radius: 0 0 15px 15px; }
+.order { margin: 4px 0 8px; font-size: clamp(13px, 2vw, 19px); }
+.caption { color: var(--muted); font-size: 11px; font-weight: 800; }
+#stage { color: var(--teal); font-size: 13px; }
+.entry { position: relative; text-align: center; min-width: 0; }
+#prompt { margin: 0; font-size: clamp(19px, 4vw, 40px); line-height: 1.1; }
+#roman { margin-top: 3px; color: #775b51; font: bold clamp(13px, 2.5vw, 22px) ui-monospace, monospace; letter-spacing: .09em; overflow-wrap: anywhere; }
+#typed { color: var(--teal); }
+#next { color: var(--red); border-bottom: 2px solid var(--red); }
+#key { width: min(220px, 100%); margin-top: 6px; padding: 4px 7px; border: 1px solid #c7a78d; border-radius: 5px; background: #fffcf6; color: var(--ink); text-align: center; }
+#key:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+#key.bad { background: #ffe2d8; outline-color: var(--red); }
+.count { text-align: right; white-space: nowrap; color: var(--red); }
+#served { font: bold clamp(21px, 3.5vw, 34px) ui-monospace, monospace; }
+footer { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; color: var(--muted); font-size: 12px; }
+#status.trouble { color: var(--red); font-weight: 850; }
+#stamp { position: absolute; right: 0; top: -28px; z-index: 1; padding: 3px 9px; color: var(--teal); border: 3px double currentColor; border-radius: 5px; background: var(--paper); font-weight: 900; transform: rotate(-8deg); pointer-events: none; }
+#opening { overflow: visible; background: transparent; border: 0; box-shadow: none; }
+.opening-sign { display: inline-block; color: #fff8e8; background: var(--red); border: 4px solid var(--honey); border-radius: 12px; padding: 13px 25px; font-weight: 900; font-size: clamp(25px, 5vw, 48px); transform-origin: top; animation: flip-sign .62s ease-out both; }
+.opening-waiter { display: inline-block; vertical-align: middle; width: 89px; height: 126px; background: url("assets/characters.webp?v=chibi") -2px -262px / 390px 390px; animation: waiter-in .62s ease-out both; }
+#confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+#confetti i { position: absolute; top: 0; left: var(--x); width: 9px; height: 14px; background: var(--color); animation: fall 1.55s var(--delay) ease-in both; }
+@keyframes flip-sign { 0% { transform: perspective(400px) rotateX(-100deg); } 79% { transform: perspective(400px) rotateX(12deg); } 100% { transform: rotateX(0); } }
+@keyframes waiter-in { from { transform: translateX(-36px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fall { from { transform: translateY(-35px) rotate(0); } to { transform: translateY(72vh) rotate(400deg); opacity: 0; } }
+@media (max-width: 760px) {
+  main { width: calc(100% - 20px); }
+  header { min-height: 49px; }
+  .brand { font-size: 10px; }
+  .session-controls { gap: 6px; }
+  body:is([data-screen="game"], [data-screen="opening"]) .session-controls .brand { display: none; }
+  #timer { font-size: 16px; padding: 4px 6px; }
+  #welcome { grid-template-columns: 1fr; }
+  .home-art { grid-row: 1; border-left: 0; border-bottom: 1px solid #92b7a2; padding: 3px 12px; }
+  #crewArt { width: min(100%, 316px); }
+  .welcome-copy { padding: 16px; }
+  #welcomeTitle br { display: none; }
+  #welcomeTitle { font-size: clamp(27px, 8vw, 49px); }
+  .console { min-height: 88px; padding-inline: 7px; grid-template-columns: minmax(61px, 1fr) 2fr minmax(53px, .8fr); }
+  #stage { font-size: 10px; }
+  .curtain { padding: 8px; }
+  .session-card { padding: 13px; }
+  .session-card button { padding: 8px 10px; }
+  .ranking-scroll :is(th,td) { padding: 7px 6px; }
+  .ranking-scroll td:first-child { width: auto; }
+  .submit-line button { white-space: normal; flex-shrink: 0; }
+  body[data-screen="game"] .scene:has(#pauseCard:not([hidden])) #kitchen { min-height: 220px; object-fit: cover; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opening-sign, .opening-waiter { animation: none; }
+  #confetti { display: none; }
+}
 </style>
 </head>
 <body data-screen="home">
 <main>
-  <header><h1>タイピングキッチン</h1><div class="session-controls"><span class="brand">KAIRI_STUDIO</span><span id="timer" aria-label="残り時間">3:00</span><button id="pause" type="button" hidden>一時停止</button></div></header>
+  <header><h1>タイピングキッチン</h1><div class="session-controls"><span class="brand">KAIRI_STUDIO</span><button id="sound" type="button" class="secondary" aria-label="効果音" aria-pressed="true">音あり</button><span id="timer" aria-label="残り時間">3:00</span><button id="pause" type="button" hidden>一時停止</button></div></header>
   <div class="scene">
   <canvas id="kitchen" width="1440" height="672" aria-label="奥から仕込み、加熱、盛り付けの調理台が並ぶ厨房"></canvas>
   <div id="curtain" class="curtain">
     <section id="welcome" class="session-card" aria-labelledby="welcomeTitle">
-      <p class="home-eyebrow">3分間のドタバタ料理タイピング</p>
+      <div class="welcome-copy">
+      <p class="home-eyebrow">どうぶつ洋食店</p>
       <h2 id="welcomeTitle">タイピング<br>キッチン</h2>
-      <p>3つのお題でひと皿を。<br>あわてる厨房を、あなたのタイピングで立て直そう。</p>
+      <p>3分間で何皿お届けできるかな？<br>ローマ字を3つ打って、ひと皿完成！</p>
       <label class="name-label" for="playerName">ニックネーム <span>8文字まで・あとから変更できます</span></label>
       <input id="playerName" class="name-input" type="text" autocomplete="off" spellcheck="false" maxlength="16" placeholder="なまえを入れてね">
       <p id="nameStatus" class="form-status" role="status"></p>
@@ -120,8 +167,11 @@ body[data-screen="home"] #timer, body[data-screen="ranking"] #timer { display: n
         <button id="openRanking" type="button" class="secondary">ランキング</button>
       </div>
       <p id="homeBest" class="hint"></p>
-      <p class="hint">PC・半角英字で入力・Enterは不要</p>
+      <p class="hint">PCの半角英字キーで遊べます。Enterは不要です。</p>
+      </div>
+      <div class="home-art"><canvas id="crewArt" width="600" height="375" role="img" aria-label="洋食店のコックとウェイター"></canvas></div>
     </section>
+    <div id="opening" class="session-card" hidden><span class="opening-waiter" aria-hidden="true"></span><strong class="opening-sign">営業中</strong></div>
     <section id="pauseCard" class="session-card" aria-labelledby="pauseTitle" hidden>
       <h2 id="pauseTitle">ひと休み</h2><p>準備ができたら営業を再開しよう。</p>
       <button id="resume" type="button">営業を再開</button>
@@ -129,6 +179,7 @@ body[data-screen="home"] #timer, body[data-screen="ranking"] #timer { display: n
     </section>
     <section id="results" class="session-card" aria-labelledby="resultTitle" hidden>
       <h2 id="resultTitle">本日の営業終了</h2>
+      <canvas id="resultDishes" width="500" height="74" aria-hidden="true" hidden></canvas>
       <dl class="results-grid">
         <div><dt>お届けした料理</dt><dd id="resultServed">0皿</dd></div>
         <div><dt>正確さ</dt><dd id="resultAccuracy">—</dd></div>
@@ -145,7 +196,7 @@ body[data-screen="home"] #timer, body[data-screen="ranking"] #timer { display: n
       <button id="homeFromResult" type="button" class="text-button">ホームへ</button>
     </section>
     <section id="ranking" class="session-card ranking-card" aria-labelledby="rankingTitle" hidden>
-      <div class="ranking-heading"><div><p class="home-eyebrow">MONTHLY RANKING</p><h2 id="rankingTitle">今月のランキング</h2></div><button id="rankingBack" type="button" class="secondary">戻る</button></div>
+      <div class="ranking-heading"><div><h2 id="rankingTitle">今月のランキング</h2></div><button id="rankingBack" type="button" class="secondary">戻る</button></div>
       <p class="ranking-rule">お届けした皿数で競争。同じ皿数なら、正確さが高い人が上位です。</p>
       <div class="ranking-scroll" tabindex="0" aria-label="ランキング一覧">
         <table><thead><tr><th scope="col">順位</th><th scope="col">なまえ</th><th scope="col">料理</th><th scope="col">正確さ</th></tr></thead><tbody id="rankingRows"></tbody></table>
@@ -153,17 +204,18 @@ body[data-screen="home"] #timer, body[data-screen="ranking"] #timer { display: n
       </div>
       <div class="ranking-footer"><p class="hint">日本時間で月ごとに更新・上位50人</p><button id="rankingReload" type="button" class="text-button">再読み込み</button></div>
     </section>
+    <div id="confetti" aria-hidden="true"></div>
   </div></div>
   <section id="typingConsole" class="console" hidden aria-label="タイピング">
     <div><div class="caption">注文</div><h2 class="order" id="order"></h2><strong id="stage"></strong></div>
-    <div class="entry"><h2 id="prompt"></h2><div id="roman" aria-hidden="true"><span id="typed"></span><span id="next"></span><span id="rest"></span></div>
+    <div class="entry"><span id="stamp" aria-hidden="true" hidden>OK!</span><h2 id="prompt"></h2><div id="roman" aria-hidden="true"><span id="typed"></span><span id="next"></span><span id="rest"></span></div>
       <input id="key" aria-label="ローマ字入力欄" placeholder="半角英字で入力" autocomplete="off" spellcheck="false" inputmode="none" disabled>
     </div>
     <div class="count"><div class="caption">提供済み</div><strong id="served">00</strong> 皿</div>
   </section>
   <footer><span id="status" role="status">厨房を準備しています…</span><span>PCの英数キーで入力</span></footer>
 </main>
-<script src="game.js?v=home-ranking"></script>
+<script src="game.js?v=yoshoku-1"></script>
 <script type="module" src="ranking.js?v=online-monthly-1"></script>
 </body>
 </html>
