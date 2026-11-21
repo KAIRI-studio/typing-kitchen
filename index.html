@@ -59,23 +59,72 @@ button:disabled { opacity: .6; cursor: wait; }
 .results-grid dt { font-size: 12px; color: var(--soft); }
 .results-grid dd { margin: 7px 0 0; font-size: clamp(23px, 3vw, 36px); font-weight: bold; color: var(--gold); }
 @media (max-width: 760px) { .session-controls { gap: 8px; } #timer { font-size: 18px; } .session-card h2 { margin-bottom: 7px; } .session-card p { font-size: 12px; margin: 7px 0; } .session-card button { padding: 7px 12px; } .results-grid { margin: 12px 0; gap: 7px; } .results-grid dt { font-size: 10px; } }
+.scene { min-height: 440px; }
+.curtain { backdrop-filter: blur(1.5px); padding: 18px; }
+#welcome { width: min(590px, 96%); text-align: left; padding: clamp(22px, 3.2vw, 38px); background: rgba(28,35,36,.96); }
+#welcomeTitle { font-size: clamp(36px, 4.8vw, 58px); line-height: 1.05; letter-spacing: .03em; color: #f2dab9; margin: 10px 0 18px; }
+.home-eyebrow { color: #d9b687 !important; font-size: 12px !important; letter-spacing: .13em; margin: 0 !important; }
+.name-label { display: block; font-size: 14px; text-align: left; margin: 18px 0 8px; }
+.name-label span { font-size: 12px; color: #aeb8b4; margin-left: 8px; }
+.name-input { box-sizing: border-box; width: 100%; min-width: 0; color: #f1ebe0; background: #171e20; border: 1px solid #687775; border-radius: 5px; padding: 10px 12px; font: inherit; font-size: 16px; }
+.name-input:focus { outline: 2px solid #edbf84; outline-offset: 2px; }
+.card-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 15px 0 0; }
+#welcome .card-actions { justify-content: flex-start; }
+.secondary { background: #303c3c; color: #f1e4ce; border-color: #697875; }
+.secondary:hover { background: #43524f; }
+.text-button { display: block; background: transparent; border-color: transparent; color: #d7c7ad; font-size: 13px; margin: 7px auto 0; padding: 7px 12px; }
+.text-button:hover { background: #394140; }
+.form-status { min-height: 1.5em; font-size: 13px !important; margin: 7px 0 !important; color: #e4bd88 !important; }
+.form-status.error, .ranking-message.error { color: #ffb4a3 !important; }
+.submit-form { border-top: 1px solid #4b5755; margin-top: 16px; padding-top: 2px; }
+.submit-form .name-label { font-size: 13px; margin-top: 12px; }
+.submit-line { display: flex; gap: 8px; }
+.submit-line button { white-space: nowrap; padding: 7px 12px; font-size: 13px; }
+.ranking-card { width: min(820px, 97%); text-align: left; display: flex; flex-direction: column; height: min(540px, 98%); padding: 24px; }
+.ranking-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ranking-heading h2 { margin: 7px 0 0; }
+.ranking-heading button { font-size: 14px; padding: 7px 15px; }
+.ranking-rule { font-size: 13px !important; margin: 14px 0 !important; }
+.ranking-scroll { overflow-y: auto; min-height: 80px; flex: 1; background: #1b2324; border: 1px solid #42514e; border-radius: 6px; }
+.ranking-scroll table { width: 100%; border-collapse: collapse; font-size: 16px; }
+.ranking-scroll th { position: sticky; top: 0; background: #35433f; font-size: 12px; padding: 11px 13px; color: #bfcac0; text-align: left; }
+.ranking-scroll td { padding: 12px 13px; border-bottom: 1px solid #35413d; }
+.ranking-scroll th:nth-child(n+3), .ranking-scroll td:nth-child(n+3) { text-align: right; }
+.ranking-scroll td:first-child { width: 65px; color: #dbb47d; font: bold 19px ui-monospace, monospace; }
+.ranking-scroll tr.is-current { background: #38463d; }
+.ranking-scroll .my-mark { color: #d9bd8b; font-size: 11px; margin-left: 8px; }
+.ranking-message { padding: 22px; color: #c6d0c7; font-size: 14px !important; text-align: center; }
+.ranking-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ranking-footer .text-button { margin: 0; }
+#results { width: min(620px, 96%); }
+body[data-screen="home"] #timer, body[data-screen="ranking"] #timer { display: none; }
+@media (max-width: 760px) { .scene { min-height: 430px; } .scene canvas { height: 430px; object-fit: cover; } .curtain { padding: 8px; } .ranking-card { padding: 14px; } .ranking-scroll td, .ranking-scroll th { padding: 10px 8px; } .name-label span { display: block; margin: 5px 0 0; } .submit-line { flex-wrap: wrap; } .submit-line button { width: 100%; } .session-card { max-height: 99%; } }
 </style>
 </head>
-<body>
+<body data-screen="home">
 <main>
   <header><h1>タイピングキッチン</h1><div class="session-controls"><span class="brand">KAIRI_STUDIO</span><span id="timer" aria-label="残り時間">3:00</span><button id="pause" type="button" hidden>一時停止</button></div></header>
   <div class="scene">
   <canvas id="kitchen" width="1440" height="672" aria-label="奥から仕込み、加熱、盛り付けの調理台が並ぶ厨房"></canvas>
   <div id="curtain" class="curtain">
     <section id="welcome" class="session-card" aria-labelledby="welcomeTitle">
-      <h2 id="welcomeTitle">3分間のキッチン営業</h2>
-      <p>3つのお題を打って、料理をお届け。<br>ミスで慌てる厨房を、正解で立て直そう。</p>
-      <p class="hint">半角英字で入力・Enterは不要</p>
-      <button id="start" type="button" disabled>厨房を準備しています…</button>
+      <p class="home-eyebrow">3分間のドタバタ料理タイピング</p>
+      <h2 id="welcomeTitle">タイピング<br>キッチン</h2>
+      <p>3つのお題でひと皿を。<br>あわてる厨房を、あなたのタイピングで立て直そう。</p>
+      <label class="name-label" for="playerName">ニックネーム <span>8文字まで・あとから変更できます</span></label>
+      <input id="playerName" class="name-input" type="text" autocomplete="off" spellcheck="false" maxlength="16" placeholder="なまえを入れてね">
+      <p id="nameStatus" class="form-status" role="status"></p>
+      <div class="card-actions">
+        <button id="start" type="button" disabled>厨房を準備しています…</button>
+        <button id="openRanking" type="button" class="secondary">ランキング</button>
+      </div>
+      <p id="homeBest" class="hint"></p>
+      <p class="hint">PC・半角英字で入力・Enterは不要</p>
     </section>
     <section id="pauseCard" class="session-card" aria-labelledby="pauseTitle" hidden>
       <h2 id="pauseTitle">ひと休み</h2><p>準備ができたら営業を再開しよう。</p>
       <button id="resume" type="button">営業を再開</button>
+      <button id="quit" type="button" class="text-button">営業を終えてホームへ</button>
     </section>
     <section id="results" class="session-card" aria-labelledby="resultTitle" hidden>
       <h2 id="resultTitle">本日の営業終了</h2>
@@ -85,10 +134,26 @@ button:disabled { opacity: .6; cursor: wait; }
         <div><dt>打ち間違い</dt><dd id="resultMisses">0回</dd></div>
       </dl>
       <p id="comparison"></p>
-      <button id="retry" type="button">もう一度、3分営業</button>
+      <form id="submitForm" class="submit-form">
+        <label class="name-label" for="resultName">ランキングに使うニックネーム</label>
+        <div class="submit-line"><input id="resultName" class="name-input" type="text" autocomplete="off" spellcheck="false" maxlength="16" placeholder="8文字まで"><button id="submitScore" type="submit" class="secondary">この記録を登録</button></div>
+        <p class="hint">公開するのはニックネームと記録です。月ごとの自己ベストを掲載します。</p>
+        <p id="submitStatus" class="form-status" role="status"></p>
+      </form>
+      <div class="card-actions"><button id="retry" type="button">もう一度、3分営業</button><button id="resultRanking" type="button" class="secondary">ランキングを見る</button></div>
+      <button id="homeFromResult" type="button" class="text-button">ホームへ</button>
+    </section>
+    <section id="ranking" class="session-card ranking-card" aria-labelledby="rankingTitle" hidden>
+      <div class="ranking-heading"><div><p class="home-eyebrow">MONTHLY RANKING</p><h2 id="rankingTitle">今月のランキング</h2></div><button id="rankingBack" type="button" class="secondary">戻る</button></div>
+      <p class="ranking-rule">お届けした皿数で競争。同じ皿数なら、正確さが高い人が上位です。</p>
+      <div class="ranking-scroll" tabindex="0" aria-label="ランキング一覧">
+        <table><thead><tr><th scope="col">順位</th><th scope="col">なまえ</th><th scope="col">料理</th><th scope="col">正確さ</th></tr></thead><tbody id="rankingRows"></tbody></table>
+        <p id="rankingStatus" class="ranking-message" role="status"></p>
+      </div>
+      <div class="ranking-footer"><p class="hint">日本時間で月ごとに更新・上位50人</p><button id="rankingReload" type="button" class="text-button">再読み込み</button></div>
     </section>
   </div></div>
-  <section class="console" aria-label="タイピング">
+  <section id="typingConsole" class="console" hidden aria-label="タイピング">
     <div><div class="caption">注文</div><h2 class="order" id="order"></h2><strong id="stage"></strong></div>
     <div class="entry"><h2 id="prompt"></h2><div id="roman" aria-hidden="true"><span id="typed"></span><span id="next"></span><span id="rest"></span></div>
       <input id="key" aria-label="ローマ字入力欄" placeholder="半角英字で入力" autocomplete="off" spellcheck="false" inputmode="none" disabled>
@@ -97,6 +162,7 @@ button:disabled { opacity: .6; cursor: wait; }
   </section>
   <footer><span id="status" role="status">厨房を準備しています…</span><span>PCの英数キーで入力</span></footer>
 </main>
-<script src="game.js?v=three-minute-round"></script>
+<script src="game.js?v=home-ranking"></script>
+<script type="module" src="ranking.js?v=home-ranking"></script>
 </body>
 </html>

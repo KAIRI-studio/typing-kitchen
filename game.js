@@ -76,6 +76,9 @@ const state = {
 let art;
 let time = 0;
 let flash;
+let completedRound = null;
+let rankingReturn = "welcome";
+let submissionBusy = false;
 const chefs = [
   { x: 340, y: 326, height: 163, direction: 1, frame: 0, move: null },
   { x: 1152, y: 324, height: 177, direction: -1, frame: 3, move: null },
@@ -167,7 +170,9 @@ function readRecord() {
 
 function showSessionCard(card) {
   ui.curtain.hidden = card === null;
-  for (const id of ["welcome", "pauseCard", "results"]) ui[id].hidden = id !== card;
+  document.body.dataset.screen = card === "welcome" ? "home" : card === "ranking" ? "ranking" : "game";
+  ui.typingConsole.hidden = card === "welcome" || card === "ranking";
+  for (const id of ["welcome", "pauseCard", "results", "ranking"]) ui[id].hidden = id !== card;
 }
 
 function updateTimer() {
@@ -178,6 +183,10 @@ function updateTimer() {
 
 function startRound() {
   if (!art || !["ready", "finished"].includes(state.phase)) return;
+  savePlayerName(ui.playerName.value);
+  completedRound = null;
+  ui.submitScore.disabled = true;
+  ui.submitStatus.textContent = "";
   Object.assign(state, {
     order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null,
     trouble: 0, mistakeTime: -Infinity, easing: null, correct: 0, misses: 0,
@@ -218,6 +227,14 @@ function finishRound() {
     state.served++;
   }
   state.phase = "finished";
+  completedRound = Object.freeze({
+    id: crypto.randomUUID(), period: monthPeriod().key, served: state.served,
+    correct: state.correct, misses: state.misses, elapsedMs: roundDuration,
+    accuracy: state.correct + state.misses ? Math.round(state.correct / (state.correct + state.misses) * 10000) : 0,
+  });
+  ui.resultName.value = ui.playerName.value;
+  ui.submitScore.disabled = state.served === 0;
+  ui.submitStatus.textContent = state.served ? "" : "料理を1皿お届けすると、ランキングに登録できます。";
   ui.key.disabled = true;
   ui.pause.hidden = true;
   ui.served.textContent = String(state.served).padStart(2, "0");
@@ -238,6 +255,7 @@ function finishRound() {
   ui.status.classList.remove("trouble");
   ui.status.textContent = "3分間、おつかれさま！";
   showSessionCard("results");
+  refreshHomeBest();
   ui.retry.focus();
 }
 
@@ -276,6 +294,151 @@ document.addEventListener("keydown", event => {
   if (state.phase === "playing") pauseRound();
   else if (state.phase === "paused") resumeRound();
 });
+
+function monthPeriod(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit"}).formatToParts(date);
+  const year = parts.find(part => part.type === "year").value;
+  const month = parts.find(part => part.type === "month").value;
+  return { key: `${year}-${month}`, title: `${year}年${Number(month)}月ランキング` };
+}
+
+function normalizedName(value) {
+  return String(value).normalize("NFKC").replace(/[\u0000-\u001f\u007f<>]/g, "").trim();
+}
+
+function savePlayerName(value) {
+  const name = normalizedName(value);
+  if (Array.from(name).length > 8) {
+    ui.nameStatus.textContent = "ニックネームは8文字までにしてください。ランキング登録時に変更できます。";
+    return "";
+  }
+  ui.nameStatus.textContent = "";
+  ui.playerName.value = name;
+  try { localStorage.setItem("typing-kitchen-player-name-v1", name); } catch {}
+  return name;
+}
+
+function refreshHomeBest() {
+  const record = readRecord();
+  ui.homeBest.textContent = record ? `このブラウザの自己ベスト　${record.best}皿` : "";
+}
+
+function goHome() {
+  if (submissionBusy) return;
+  state.phase = "ready";
+  state.deliveryTime = null;
+  state.trouble = 0;
+  state.easing = null;
+  ui.key.disabled = true;
+  ui.pause.hidden = true;
+  ui.status.classList.remove("trouble");
+  ui.status.textContent = "3分間で、何皿お届けできるかな？";
+  refreshHomeBest();
+  showSessionCard("welcome");
+  ui.start.focus();
+}
+
+async function rankingService() {
+  if (!window.kitchenRankingReady) throw new Error("準備中");
+  return await window.kitchenRankingReady;
+}
+
+let rankingRequest = 0;
+async function openRanking(from = "welcome") {
+  rankingReturn = from;
+  showSessionCard("ranking");
+  ui.rankingBack.focus();
+  const request = ++rankingRequest;
+  const period = monthPeriod();
+  ui.rankingTitle.textContent = period.title;
+  ui.rankingRows.replaceChildren();
+  ui.rankingStatus.classList.remove("error");
+  ui.rankingStatus.hidden = false;
+  ui.rankingStatus.textContent = "ランキングを読み込んでいます…";
+  ui.rankingReload.disabled = true;
+  try {
+    const service = await rankingService();
+    const result = await service.load(period.key);
+    if (request !== rankingRequest) return;
+    for (const [index, entry] of result.entries.entries()) {
+      const row = document.createElement("tr");
+      const mine = entry.uid === result.uid;
+      if (mine) row.className = "is-current";
+      const values = [String(index + 1), entry.name, `${entry.served}皿`, `${(entry.accuracy / 100).toFixed(1)}%`];
+      values.forEach((value, column) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        if (mine && column === 1) {
+          const mark = document.createElement("span");
+          mark.className = "my-mark";
+          mark.textContent = "あなた";
+          cell.append(mark);
+        }
+        row.append(cell);
+      });
+      ui.rankingRows.append(row);
+    }
+    ui.rankingStatus.hidden = result.entries.length > 0;
+    ui.rankingStatus.textContent = "今月の記録はまだありません。最初の料理人になろう！";
+  } catch (error) {
+    if (request !== rankingRequest) return;
+    ui.rankingStatus.classList.add("error");
+    ui.rankingStatus.textContent = error.message === "準備中"
+      ? "オンラインランキングは公開準備中です。営業と自己ベストの保存は使えます。"
+      : "ランキングを読み込めませんでした。通信を確認して再読み込みしてください。";
+  } finally {
+    if (request === rankingRequest) ui.rankingReload.disabled = false;
+  }
+}
+
+ui.openRanking.addEventListener("click", () => openRanking("welcome"));
+ui.resultRanking.addEventListener("click", () => openRanking("results"));
+ui.rankingReload.addEventListener("click", () => openRanking(rankingReturn));
+ui.rankingBack.addEventListener("click", () => {
+  rankingRequest++;
+  showSessionCard(rankingReturn);
+  (rankingReturn === "results" ? ui.resultRanking : ui.openRanking).focus();
+});
+ui.homeFromResult.addEventListener("click", goHome);
+ui.quit.addEventListener("click", goHome);
+ui.playerName.addEventListener("change", () => savePlayerName(ui.playerName.value));
+ui.submitForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const round = completedRound;
+  if (submissionBusy || !round || !round.served) return;
+  const name = normalizedName(ui.resultName.value);
+  if (!name || Array.from(name).length > 8) {
+    ui.submitStatus.textContent = "ニックネームを1〜8文字で入れてください。";
+    ui.resultName.focus();
+    return;
+  }
+  savePlayerName(name);
+  submissionBusy = true;
+  ui.submitScore.disabled = true;
+  ui.retry.disabled = true;
+  ui.homeFromResult.disabled = true;
+  ui.resultRanking.disabled = true;
+  ui.submitStatus.textContent = "ランキングに登録しています…";
+  try {
+    const service = await rankingService();
+    const outcome = await service.submit({...round, name});
+    ui.submitStatus.textContent = outcome === "saved"
+      ? "今月の自己ベストを登録しました！"
+      : "登録済みの自己ベストを残しました。";
+  } catch (error) {
+    ui.submitStatus.textContent = error.message === "準備中"
+      ? "ランキングの公開準備中です。この画面で記録を確認できます。"
+      : "登録できませんでした。通信を確認して、もう一度お試しください。";
+    ui.submitScore.disabled = false;
+  } finally {
+    submissionBusy = false;
+    ui.retry.disabled = false;
+    ui.homeFromResult.disabled = false;
+    ui.resultRanking.disabled = false;
+  }
+});
+try { ui.playerName.value = localStorage.getItem("typing-kitchen-player-name-v1") || ""; } catch {}
+refreshHomeBest();
 
 function reportMistake() {
   const previous = state.trouble;
