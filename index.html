@@ -18,13 +18,13 @@
   --honey: #ffcd76;
 }
 body { margin: 0; color: var(--ink); background: #f5e6cc; font-family: "Yu Gothic UI", Meiryo, sans-serif; }
-main { width: min(calc(100% - 40px), 1320px, max(780px, calc((100svh - 220px) * 2.14))); margin: 0 auto; }
+main { width: min(calc(100% - 40px), 1320px, max(700px, calc((100svh - 220px) * var(--scene-scale, 2.14)))); margin: 0 auto; }
 header { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 58px; }
 h1 { margin: 0; color: var(--red); font-size: clamp(15px, 2vw, 23px); font-weight: 900; }
 .brand { color: var(--teal); font: 700 12px ui-monospace, monospace; letter-spacing: .12em; }
 [hidden] { display: none !important; }
 .scene { position: relative; isolation: isolate; }
-#kitchen { display: block; width: 100%; aspect-ratio: 15 / 7; border: 3px solid #793f30; border-radius: 18px 18px 0 0; background: #343838; }
+#kitchen { display: block; width: 100%; aspect-ratio: 1440 / var(--scene-height, 672); border: 3px solid #793f30; border-radius: 18px 18px 0 0; background: #343838; }
 .session-controls { display: flex; gap: 12px; align-items: center; }
 #sound { font-size: 12px; padding: 7px 10px; }
 #timer { color: var(--teal); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; font: bold 23px ui-monospace, monospace; }
@@ -76,6 +76,7 @@ body[data-screen="home"] #kitchen, body[data-screen="home"] footer, body[data-sc
 #welcome .nickname-row { border: 0; justify-content: center; flex-wrap: wrap; padding: 0; }
 #welcome .nickname-row b, #welcome .hint { color: #573426; }
 #welcome .text-button { color: #fff2cf; background: #673c27; padding: 3px 8px; }
+#welcome #rankedStart { display: block; margin: 0 auto 8px; }
 #welcome .text-button:hover { background: #855136; }
 #welcome .hint, #welcome #homeStatus { margin: 3px 0 0; text-align: center; }
 #welcome #homeStatus { color: #8f2c1d; }
@@ -183,11 +184,12 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
   .door-leaf { animation: none; }
   #confetti { display: none; }
 }
+.console { position: sticky; bottom: 0; z-index: 2; }
 </style>
 </head>
 <body data-screen="home">
 <main>
-  <header><h1>タイピングキッチン</h1><div class="session-controls"><span class="brand">KAIRI_STUDIO</span><button id="sound" type="button" class="secondary" aria-label="効果音" aria-pressed="true">音あり</button><span id="timer" aria-label="残り時間">3:00</span><button id="pause" type="button" hidden>一時停止</button></div></header>
+  <header><h1>タイピングキッチン</h1><div class="session-controls"><span class="brand">KAIRI_STUDIO</span><button id="sound" type="button" class="secondary" aria-label="効果音" aria-pressed="true">音あり</button><span id="timer" aria-label="残り時間">2:00</span><button id="pause" type="button" hidden>一時停止</button></div></header>
   <div class="scene">
   <canvas id="kitchen" width="1440" height="672" aria-label="奥から仕込み、加熱、盛り付けの調理台が並ぶ厨房"></canvas>
   <div id="curtain" class="curtain">
@@ -200,6 +202,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
             <button id="start" class="home-action" type="button" disabled>厨房を準備しています…</button>
             <button id="openRanking" class="home-action" type="button">ランキング</button>
           </div>
+          <button id="rankedStart" class="text-button" type="button" disabled>ランキングに挑戦（3分）</button>
           <div class="nickname-row"><span><b>なまえ</b><span id="homeName">未設定</span></span><button id="editHomeName" class="text-button" type="button" aria-label="なまえを変更">変更</button></div>
           <p id="homeStatus" class="form-status" role="status"></p>
           <p id="homeBest" class="hint"></p>
@@ -228,7 +231,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
         <p class="hint">公開するのはニックネームと記録です。月ごとの自己ベストを掲載します。</p>
         <p id="submitStatus" class="form-status" role="status"></p>
       </form>
-      <div class="card-actions"><button id="retry" type="button">もう一度、3分営業</button><button id="resultRanking" type="button" class="secondary">ランキングを見る</button></div>
+      <div class="card-actions"><button id="retry" type="button">もう一度あそぶ</button><button id="resultRanking" type="button" class="secondary">ランキングを見る</button></div>
       <button id="homeFromResult" type="button" class="text-button">ホームへ</button>
     </section>
     <section id="ranking" class="session-card ranking-card" aria-labelledby="rankingTitle" hidden>
@@ -260,7 +263,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
     <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">保存</button></div>
   </form>
 </dialog>
-<script src="game.js?v=delivery-queue"></script>
+<script src="game.js?v=two-minute-counter"></script>
 <script type="module" src="ranking.js?v=online-monthly-1"></script>
 </body>
 </html>

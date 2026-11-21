@@ -14,8 +14,24 @@ const extraPrompts = [
   [[["にんじん", "ninjin", "ninzin"]], [["カレー", "kare-"]], [["ごはん", "gohan"]]],
   [[["たまねぎ", "tamanegi"]], [["フライパン", "furaipan"]], [["ソース", "so-su"]]],
 ];
-const roundDuration = 180000;
-const recordKey = "typing-kitchen-round-v1";
+const shortDuration = 120000;
+const rankedDuration = 180000;
+let roundDuration = shortDuration;
+const recordKey = duration => duration === rankedDuration ? "typing-kitchen-round-v1" : "typing-kitchen-round-2min";
+const everydayPrompts = [
+  ["ねこ", "neko"], ["うさぎ", "usagi"], ["きつね", "kitsune"], ["ぺんぎん", "pengin"],
+  ["えんぴつ", "enpitsu"], ["けしごむ", "keshigomu"], ["としょしつ", "toshoshitsu"], ["うんどうかい", "undoukai"],
+  ["しゃぼんだま", "shabondama"], ["かくれんぼ", "kakurenbo"], ["なわとび", "nawatobi"], ["たからさがし", "takarasagashi"],
+  ["そら", "sora"], ["にじ", "niji"], ["ほしぞら", "hoshizora"], ["ひまわり", "himawari"],
+  ["でんしゃ", "densha"], ["じてんしゃ", "jitensha"], ["ひこうき", "hikouki"], ["しんかんせん", "shinkansen"],
+  ["ぼうし", "boushi"], ["かさ", "kasa"], ["ながぐつ", "nagagutsu"], ["とけい", "tokei"],
+  ["おんがく", "ongaku"], ["えほん", "ehon"], ["おりがみ", "origami"], ["すいぞくかん", "suizokukan"],
+  ["さくら", "sakura"], ["あさがお", "asagao"], ["いちょう", "ichou"], ["ゆきだるま", "yukidaruma"],
+  ["かいがら", "kaigara"], ["ひこうきぐも", "hikoukigumo"], ["とんぼ", "tonbo"], ["ほたる", "hotaru"],
+  ["きょうしつ", "kyoushitsu"], ["うわばき", "uwabaki"], ["じゆうちょう", "jiyuuchou"], ["らんどせる", "randoseru"],
+  ["すべりだい", "suberidai"], ["ぶらんこ", "buranko"], ["えかきうた", "ekakiuta"], ["みずでっぽう", "mizudeppou"],
+  ["こねこ", "koneko"], ["やまみち", "yamamichi"], ["しろくま", "shirokuma"], ["いるか", "iruka"],
+];
 
 function spellingOptions(prompt) {
   const [label, ...spellings] = prompt;
@@ -31,6 +47,10 @@ function spellingOptions(prompt) {
 
 function choosePrompts(order, completed) {
   return orders[order].slice(1).map((original, stage) => {
+    if (roundDuration === shortDuration && stage !== completed % 3) {
+      const word = everydayPrompts[(completed * 2 + (stage < completed % 3 ? stage : stage - 1)) % everydayPrompts.length];
+      return spellingOptions(word);
+    }
     const variants = [original, ...extraPrompts[order][stage]];
     return spellingOptions(variants[Math.floor(completed / orders.length) % variants.length]);
   });
@@ -66,6 +86,21 @@ const counterTop = 562;
 const counterY = 611;
 const platedDish = stations[2];
 const slots = [720, 865, 575, 1010, 430, 1155, 285, 1300, 140];
+const counterRowHeight = 85;
+const counterSurfaceHeight = 97;
+let counterRows = 1;
+
+function counterSlot(index) {
+  return { x: slots[index % slots.length], y: counterY + Math.floor(index / slots.length) * counterRowHeight };
+}
+
+function setCounterRows(rows) {
+  counterRows = rows;
+  const height = 672 + (rows - 1) * counterRowHeight;
+  if (ui.kitchen.height !== height) ui.kitchen.height = height;
+  ui.kitchen.style.setProperty("--scene-height", height);
+  ui.kitchen.closest("main").style.setProperty("--scene-scale", 1440 / height);
+}
 const passPlate = { x: 862, y: platedDish.y };
 const state = {
   order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, cooked: 0, deliveryTime: null, deliveryPlaced: false,
@@ -215,9 +250,9 @@ ui.key.addEventListener("input", () => {
 });
 ui.kitchen.addEventListener("click", () => ui.key.focus());
 
-function readRecord() {
+function readRecord(duration = roundDuration) {
   try {
-    const record = JSON.parse(localStorage.getItem(recordKey));
+    const record = JSON.parse(localStorage.getItem(recordKey(duration)));
     return record && Number.isInteger(record.last) && record.last >= 0
       && Number.isInteger(record.best) && record.best >= record.last ? record : null;
   } catch {
@@ -240,10 +275,13 @@ function updateTimer() {
   ui.timer.classList.toggle("urgent", state.remaining > 0 && state.remaining <= 30000);
 }
 
-function openForBusiness() {
+function openForBusiness(duration = shortDuration) {
   if (!art || submissionBusy || !["ready", "finished"].includes(state.phase)) return;
   prepareBell();
+  roundDuration = duration;
+  setCounterRows(1);
   completedRound = null;
+  ui.submitForm.hidden = duration !== rankedDuration;
   ui.submitScore.disabled = true;
   ui.submitStatus.textContent = "";
   Object.assign(state, {
@@ -321,12 +359,12 @@ function finishRound() {
   showResultDishes();
   if (newBest && !reducedMotion.matches) celebrateBest();
   try {
-    localStorage.setItem(recordKey, JSON.stringify({ last: state.served, best }));
+    localStorage.setItem(recordKey(roundDuration), JSON.stringify({ last: state.served, best }));
   } catch {
     ui.comparison.textContent += "　このブラウザでは記録を保存できませんでした";
   }
   ui.status.classList.remove("trouble");
-  ui.status.textContent = "3分間、おつかれさま！";
+  ui.status.textContent = `${roundDuration / 60000}分間、おつかれさま！`;
   showSessionCard("results");
   refreshHomeBest();
   ui.retry.focus();
@@ -355,8 +393,9 @@ function resumeRound() {
   ui.key.focus();
 }
 
-ui.start.addEventListener("click", openForBusiness);
-ui.retry.addEventListener("click", openForBusiness);
+ui.start.addEventListener("click", () => openForBusiness(shortDuration));
+ui.rankedStart.addEventListener("click", () => openForBusiness(rankedDuration));
+ui.retry.addEventListener("click", () => openForBusiness(roundDuration));
 ui.pause.addEventListener("click", pauseRound);
 ui.resume.addEventListener("click", resumeRound);
 document.addEventListener("visibilitychange", () => {
@@ -415,8 +454,8 @@ ui.nameForm.addEventListener("submit", event => {
 renderPlayerName();
 
 function refreshHomeBest() {
-  const record = readRecord();
-  ui.homeBest.textContent = record ? `このブラウザの自己ベスト　${record.best}皿` : "";
+  const record = readRecord(shortDuration);
+  ui.homeBest.textContent = record ? `2分の自己ベスト　${record.best}皿` : "";
 }
 
 function goHome() {
@@ -428,7 +467,7 @@ function goHome() {
   ui.key.disabled = true;
   ui.pause.hidden = true;
   ui.status.classList.remove("trouble");
-  ui.status.textContent = "3分間で、何皿お届けできるかな？";
+  ui.status.textContent = "2分間で、何皿お届けできるかな？";
   refreshHomeBest();
   showSessionCard("welcome");
   ui.start.focus();
@@ -446,7 +485,7 @@ async function openRanking(from = "welcome") {
   ui.rankingBack.focus();
   const request = ++rankingRequest;
   const period = monthPeriod();
-  ui.rankingTitle.textContent = period.title;
+  ui.rankingTitle.textContent = `${period.title}（3分）`;
   ui.rankingRows.replaceChildren();
   ui.rankingStatus.classList.remove("error");
   ui.rankingStatus.hidden = false;
@@ -507,7 +546,7 @@ ui.quit.addEventListener("click", goHome);
 ui.submitForm.addEventListener("submit", async event => {
   event.preventDefault();
   const round = completedRound;
-  if (submissionBusy || !round || !round.served) return;
+  if (submissionBusy || !round || !round.served || round.elapsedMs !== rankedDuration) return;
   const name = playerName;
   if (!name || Array.from(name).length > 8) {
     ui.submitStatus.textContent = "「変更」から、なまえを設定してください。";
@@ -876,7 +915,7 @@ function waiterPose(elapsed) {
     return { x: waiterHome.x + Math.sin(phase) * 52, y: waiterHome.y, direction: Math.cos(phase) > 0 ? 1 : -1, walk: true, hands: false };
   }
   if (elapsed === null || elapsed < 260) return { ...waiterHome, direction: 1, walk: false, hands: false };
-  const destination = slots[deliveryIndex() % slots.length];
+  const destination = counterSlot(deliveryIndex()).x;
   if (elapsed < deliveryPhases.approach) {
     const amount = progress(elapsed - 260, deliveryPhases.approach - 260);
     return { x: mix(waiterHome.x, pickup.x, amount), y: mix(waiterHome.y, pickup.y, amount), direction: -1, walk: true, hands: true };
@@ -907,18 +946,23 @@ function drawWaiter(elapsed) {
   }
 
   if (elapsed === null) drawSweat(pose.x, pose.y, waiterHeight, pose.direction, crewStress());
+}
+
+function drawCarriedDish(elapsed) {
   if (elapsed === null || elapsed < deliveryPhases.approach || elapsed >= deliveryPhases.place) return;
+  const pose = waiterPose(elapsed);
   const amount = progress(elapsed - deliveryPhases.carry, deliveryPhases.place - deliveryPhases.carry);
-  const slot = slots[deliveryIndex() % slots.length];
+  const slot = counterSlot(deliveryIndex());
   const fromPickup = progress(elapsed - deliveryPhases.approach, 170);
   const handX = mix(passPlate.x, pose.x + pose.direction * deliveryHandX, fromPickup);
   const handY = mix(passPlate.y, pose.y - waiterHeight * .36, fromPickup);
-  drawPlatedDish(deliveringOrder(), mix(handX, slot, amount), mix(handY, counterY, amount));
+  drawPlatedDish(deliveringOrder(), mix(handX, slot.x, amount), mix(handY, slot.y, amount));
 }
 
 function drawCounter() {
-  for (let item = Math.max(0, state.served - slots.length); item < state.served; item++) {
-    drawPlatedDish((firstOrder + item) % orders.length, slots[item % slots.length], counterY);
+  for (let item = 0; item < state.served; item++) {
+    const { x, y } = counterSlot(item);
+    drawPlatedDish((firstOrder + item) % orders.length, x, y);
   }
 }
 
@@ -930,6 +974,10 @@ function draw(timestamp) {
   }
   if (state.phase === "playing") advanceDelivery();
   const delivery = state.deliveryTime === null ? null : time - state.deliveryTime;
+  if (delivery !== null && state.served < state.cooked) {
+    const rows = Math.floor(deliveryIndex() / slots.length) + 1;
+    if (rows > counterRows) setCounterRows(rows);
+  }
   ctx.drawImage(art.kitchen, 0, 0);
   const scene = tableLayers.map(({ depth }, index) => ({ depth, draw: () => drawTable(index, delivery) }));
   chefs.forEach((chef, index) => {
@@ -939,8 +987,12 @@ function draw(timestamp) {
   scene.push({ depth: waiterPose(delivery).y, draw: () => drawWaiter(delivery) });
   scene.sort((left, right) => left.depth - right.depth);
   scene.forEach(layer => layer.draw());
-  ctx.drawImage(art.counter, 0, counterTop);
+  const depth = counterSurfaceHeight + (counterRows - 1) * counterRowHeight;
+  ctx.drawImage(art.counter, 0, 0, 1440, counterSurfaceHeight, 0, counterTop, 1440, depth);
+  const edge = art.counter.height - counterSurfaceHeight;
+  ctx.drawImage(art.counter, 0, counterSurfaceHeight, 1440, edge, 0, counterTop + depth, 1440, edge);
   drawCounter();
+  drawCarriedDish(delivery);
   requestAnimationFrame(draw);
 }
 
@@ -983,8 +1035,9 @@ const files = ["kitchen", "characters", "food", "counter", "reactions"];
 Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
   ui.status.textContent = "準備できました。営業をはじめよう";
+  ui.rankedStart.disabled = false;
   ui.start.disabled = false;
-  ui.start.textContent = "開店する";
+  ui.start.textContent = "開店する（2分）";
   if (document.activeElement === document.body) ui.start.focus();
   showPrompt();
   requestAnimationFrame(timestamp => {
