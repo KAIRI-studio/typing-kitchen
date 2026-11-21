@@ -1,4 +1,4 @@
-const rankingEnabled = false;
+const rankingEnabled = true;
 
 const firebaseConfig = {
   apiKey: "AIzaSyC_pFjqjfzpxexW9t4swhaNJoXZOlDeDbc",
