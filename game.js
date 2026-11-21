@@ -59,15 +59,16 @@ const mishaps = [
 ];
 
 const waiterHome = { x: 1048, y: 542 };
-const pickup = { x: 681, y: 506 };
+const pickup = { x: 818, y: 506 };
 const deliveryHandX = 44;
 const waiterHeight = 185;
 const counterTop = 562;
 const counterY = 611;
 const platedDish = stations[2];
-const slots = [802, 961, 1120, 1279];
+const slots = [720, 865, 575, 1010, 430, 1155, 285, 1300, 140];
+const passPlate = { x: 862, y: platedDish.y };
 const state = {
-  order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null,
+  order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, cooked: 0, deliveryTime: null, deliveryPlaced: false,
   trouble: 0, mistakeTime: -Infinity, easing: null,
   phase: "ready", remaining: roundDuration, lastFrame: null, correct: 0, misses: 0,
   prompts: choosePrompts(firstOrder, 0),
@@ -77,7 +78,6 @@ let art;
 let time = 0;
 let flash;
 let stampTimeout;
-let servedBellPlayed = false;
 let bellAudio;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const soundKey = "typing-kitchen-sound";
@@ -164,7 +164,7 @@ ui.key.addEventListener("keydown", event => {
   event.preventDefault();
   if (!art || state.phase !== "playing") return;
   updateClock(performance.now());
-  if (state.phase !== "playing" || state.deliveryTime !== null) return;
+  if (state.phase !== "playing") return;
   if (event.key === "Backspace") {
     state.typed = state.typed.slice(0, -1);
     showRoman();
@@ -199,13 +199,18 @@ ui.key.addEventListener("keydown", event => {
     showPrompt();
     return;
   }
-  servedBellPlayed = false;
-  state.deliveryTime = time;
-  ui.status.textContent = recovered ? "持ち直した！　ウェイターが運びます" : "できあがり。ウェイターが運びます";
-  ui.key.value = "";
+  state.cooked++;
+  state.deliveryTime ??= time;
+  state.order = (firstOrder + state.cooked) % orders.length;
+  state.prompts = choosePrompts(state.order, state.cooked);
+  state.step = 0;
+  state.stageTime = time;
+  cueChefs(0);
+  ui.status.textContent = recovered ? "持ち直した！　次の注文へ" : "料理が完成！　次の注文へ";
+  showPrompt();
 });
 ui.key.addEventListener("input", () => {
-  if (state.phase === "playing" && state.deliveryTime === null) showRoman();
+  if (state.phase === "playing") showRoman();
   else ui.key.value = "";
 });
 ui.kitchen.addEventListener("click", () => ui.key.focus());
@@ -242,7 +247,7 @@ function openForBusiness() {
   ui.submitScore.disabled = true;
   ui.submitStatus.textContent = "";
   Object.assign(state, {
-    order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null,
+    order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, cooked: 0, deliveryTime: null, deliveryPlaced: false,
     trouble: 0, mistakeTime: -Infinity, easing: null, correct: 0, misses: 0,
     remaining: roundDuration, phase: "opening", lastFrame: null,
     prompts: choosePrompts(firstOrder, 0),
@@ -290,10 +295,7 @@ function updateClock(now) {
 
 function finishRound() {
   if (state.phase !== "playing") return;
-  // A dish counts once it lands on the counter, including during the return walk.
-  if (state.deliveryTime !== null && time - state.deliveryTime >= deliveryPhases.place) {
-    state.served++;
-  }
+  advanceDelivery();
   state.phase = "finished";
   completedRound = Object.freeze({
     id: crypto.randomUUID(), period: monthPeriod().key, served: state.served,
@@ -654,7 +656,7 @@ function drawChef(chef, active) {
   drawSweat(x, y, height, moving ? walkingDirection : chef.direction, stress);
 }
 
-function drawTable(index, showFinished) {
+function drawTable(index, delivery) {
   const { outline } = tableLayers[index];
   const station = stations[index];
   ctx.save();
@@ -672,9 +674,8 @@ function drawTable(index, showFinished) {
   ctx.font = "bold 13px 'Yu Gothic UI', sans-serif";
   ctx.fillText(`0${index + 1}  ${stages[index]}`, station.labelX + 7, station.labelY);
 
-  if (state.deliveryTime !== null) {
-    if (active && showFinished) drawPlatedDish(state.order, station.x, station.y);
-    return;
+  if (index === 2 && delivery !== null && delivery < deliveryPhases.approach) {
+    drawPlatedDish(deliveringOrder(), passPlate.x, passPlate.y);
   }
 
   const amount = progress(time - state.stageTime, 280);
@@ -844,26 +845,53 @@ function drawSweat(x, y, height, direction, stress) {
 
 const deliveryPhases = { approach: 930, carry: 1970, place: 2270, reset: 2910 };
 
+function deliveringOrder() {
+  return (firstOrder + deliveryIndex()) % orders.length;
+}
+
+function deliveryIndex() {
+  return state.served - Number(state.deliveryPlaced);
+}
+
+// Keep the current trip's destination fixed even after counting the plate.
+function advanceDelivery() {
+  if (state.deliveryTime === null) return;
+  while (state.deliveryTime !== null) {
+    const elapsed = time - state.deliveryTime;
+    if (elapsed >= deliveryPhases.place && !state.deliveryPlaced) {
+      state.deliveryPlaced = true;
+      state.served++;
+      ui.served.textContent = String(state.served).padStart(2, "0");
+      if (state.phase === "playing" && state.remaining > 0) ringBell();
+    }
+    if (elapsed < deliveryPhases.reset) return;
+    state.deliveryTime = state.served < state.cooked ? state.deliveryTime + deliveryPhases.reset : null;
+    state.deliveryPlaced = false;
+  }
+}
+
 function waiterPose(elapsed) {
   if (elapsed === null && crewStress() >= 2.2) {
     const phase = time / 185;
     return { x: waiterHome.x + Math.sin(phase) * 52, y: waiterHome.y, direction: Math.cos(phase) > 0 ? 1 : -1, walk: true, hands: false };
   }
   if (elapsed === null || elapsed < 260) return { ...waiterHome, direction: 1, walk: false, hands: false };
-  const destination = slots[state.served % slots.length];
+  const destination = slots[deliveryIndex() % slots.length];
   if (elapsed < deliveryPhases.approach) {
     const amount = progress(elapsed - 260, deliveryPhases.approach - 260);
     return { x: mix(waiterHome.x, pickup.x, amount), y: mix(waiterHome.y, pickup.y, amount), direction: -1, walk: true, hands: true };
   }
+  const direction = destination < pickup.x ? -1 : 1;
+  const stopX = destination - direction * deliveryHandX;
   if (elapsed < deliveryPhases.carry) {
     const amount = progress(elapsed - deliveryPhases.approach, deliveryPhases.carry - deliveryPhases.approach);
-    return { x: mix(pickup.x, destination - deliveryHandX, amount), y: mix(pickup.y, waiterHome.y, amount), direction: 1, walk: true, hands: true };
+    return { x: mix(pickup.x, stopX, amount), y: mix(pickup.y, waiterHome.y, amount), direction, walk: true, hands: true };
   }
   if (elapsed < deliveryPhases.place) {
-    return { x: destination - deliveryHandX, y: waiterHome.y, direction: 1, walk: false, hands: true };
+    return { x: stopX, y: waiterHome.y, direction, walk: false, hands: true };
   }
   const amount = progress(elapsed - deliveryPhases.place, deliveryPhases.reset - deliveryPhases.place);
-  return { x: mix(destination - deliveryHandX, waiterHome.x, amount), y: waiterHome.y, direction: destination - deliveryHandX > waiterHome.x ? -1 : 1, walk: true, hands: false };
+  return { x: mix(stopX, waiterHome.x, amount), y: waiterHome.y, direction: stopX > waiterHome.x ? -1 : 1, walk: true, hands: false };
 }
 
 function drawWaiter(elapsed) {
@@ -881,17 +909,15 @@ function drawWaiter(elapsed) {
   if (elapsed === null) drawSweat(pose.x, pose.y, waiterHeight, pose.direction, crewStress());
   if (elapsed === null || elapsed < deliveryPhases.approach || elapsed >= deliveryPhases.place) return;
   const amount = progress(elapsed - deliveryPhases.carry, deliveryPhases.place - deliveryPhases.carry);
-  const slot = slots[state.served % slots.length];
+  const slot = slots[deliveryIndex() % slots.length];
   const fromPickup = progress(elapsed - deliveryPhases.approach, 170);
-  const handX = mix(platedDish.x, pose.x + deliveryHandX, fromPickup);
-  const handY = mix(platedDish.y, pose.y - waiterHeight * .36, fromPickup);
-  drawPlatedDish(state.order, mix(handX, slot, amount), mix(handY, counterY, amount));
+  const handX = mix(passPlate.x, pose.x + pose.direction * deliveryHandX, fromPickup);
+  const handY = mix(passPlate.y, pose.y - waiterHeight * .36, fromPickup);
+  drawPlatedDish(deliveringOrder(), mix(handX, slot, amount), mix(handY, counterY, amount));
 }
 
-function drawCounter(elapsed) {
-  const inDelivery = elapsed !== null && elapsed >= deliveryPhases.place;
-  const total = state.served + Number(inDelivery);
-  for (let item = Math.max(0, total - slots.length); item < total; item++) {
+function drawCounter() {
+  for (let item = Math.max(0, state.served - slots.length); item < state.served; item++) {
     drawPlatedDish((firstOrder + item) % orders.length, slots[item % slots.length], counterY);
   }
 }
@@ -902,40 +928,19 @@ function draw(timestamp) {
     requestAnimationFrame(draw);
     return;
   }
-  const elapsed = state.deliveryTime === null ? null : time - state.deliveryTime;
-  if (state.phase === "playing" && elapsed !== null && elapsed >= deliveryPhases.place && !servedBellPlayed) {
-    servedBellPlayed = true;
-    ringBell();
-    ui.status.textContent = "お届け完了！";
-  }
-  if (state.phase === "playing" && elapsed !== null && elapsed >= deliveryPhases.reset) {
-    state.served++;
-    state.order = (firstOrder + state.served) % orders.length;
-    state.prompts = choosePrompts(state.order, state.served);
-    state.step = 0;
-    state.stageTime = time;
-    state.deliveryTime = null;
-    cueChefs(0);
-    ui.served.textContent = String(state.served).padStart(2, "0");
-    ui.status.textContent = "次の注文をどうぞ";
-    showPrompt();
-  }
+  if (state.phase === "playing") advanceDelivery();
   const delivery = state.deliveryTime === null ? null : time - state.deliveryTime;
   ctx.drawImage(art.kitchen, 0, 0);
-  const showFinished = delivery === null || delivery < deliveryPhases.approach;
-  const scene = tableLayers.map(({ depth }, index) => ({ depth, draw: () => drawTable(index, showFinished) }));
+  const scene = tableLayers.map(({ depth }, index) => ({ depth, draw: () => drawTable(index, delivery) }));
   chefs.forEach((chef, index) => {
-    const active = delivery === null && (index === 1 ? state.step === 1 : state.step !== 1);
+    const active = index === 1 ? state.step === 1 : state.step !== 1;
     scene.push({ depth: chefPosition(chef).y, draw: () => drawChef(chef, active) });
   });
   scene.push({ depth: waiterPose(delivery).y, draw: () => drawWaiter(delivery) });
   scene.sort((left, right) => left.depth - right.depth);
   scene.forEach(layer => layer.draw());
   ctx.drawImage(art.counter, 0, counterTop);
-  drawCounter(delivery);
-  if (state.phase !== "finished" && delivery !== null && delivery >= deliveryPhases.place) {
-    ui.served.textContent = String(state.served + 1).padStart(2, "0");
-  }
+  drawCounter();
   requestAnimationFrame(draw);
 }
 
