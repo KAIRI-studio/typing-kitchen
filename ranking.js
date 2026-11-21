@@ -20,16 +20,16 @@ function timed(promise, milliseconds = 12000) {
 function validateResult(result) {
   if (!/^[0-9]{4}-(0[1-9]|1[0-2])$/.test(result.period)
     || typeof result.name !== "string" || !result.name.trim() || Array.from(result.name).length > 8
-    || !Number.isInteger(result.served) || result.served < 1 || result.served > 62
+    || !Number.isInteger(result.served) || result.served < 1 || result.served > 41
     || !Number.isInteger(result.correct) || result.correct < result.served * 3 || result.correct > 100000
     || !Number.isInteger(result.misses) || result.misses < 0 || result.misses > 100000
-    || result.elapsedMs !== 180000 || typeof result.id !== "string" || result.id.length > 64) {
+    || result.elapsedMs !== 120000 || typeof result.id !== "string" || result.id.length > 64) {
     throw new Error("記録の形式が正しくありません");
   }
   const accuracy = Math.round(result.correct / (result.correct + result.misses) * 10000);
   return {
     name: result.name.trim(), served: result.served, correct: result.correct,
-    misses: result.misses, elapsedMs: 180000, roundId: result.id,
+    misses: result.misses, elapsedMs: 120000, roundId: result.id,
     accuracy, score: result.served * 10001 + accuracy,
   };
 }
@@ -59,7 +59,7 @@ async function client() {
 async function load(period) {
   if (!/^[0-9]{4}-(0[1-9]|1[0-2])$/.test(period)) throw new Error("月の形式が正しくありません");
   const {db, store, user} = await client();
-  const entries = db.collection(store, "kitchenRankings", period, "entries");
+  const entries = db.collection(store, "kitchenRankings2Min", period, "entries");
   const snapshot = await timed(db.getDocs(db.query(entries, db.orderBy("score", "desc"), db.limit(50))));
   return {uid: user.uid, entries: snapshot.docs.map(doc => doc.data())};
 }
@@ -67,7 +67,7 @@ async function load(period) {
 async function submit(result) {
   const entry = validateResult(result);
   const {db, store, user} = await client();
-  const ref = db.doc(store, "kitchenRankings", result.period, "entries", user.uid);
+  const ref = db.doc(store, "kitchenRankings2Min", result.period, "entries", user.uid);
   return timed(db.runTransaction(store, async transaction => {
     const current = await transaction.get(ref);
     if (!current.exists() || entry.score > current.data().score) {

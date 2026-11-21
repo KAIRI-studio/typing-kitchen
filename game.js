@@ -160,6 +160,8 @@ function stampOrder() {
   stampTimeout = setTimeout(() => { ui.stamp.hidden = true; }, 480);
 }
 let completedRound = null;
+let rankingReturn = "welcome";
+let submissionBusy = false;
 const chefs = [
   { x: 340, y: 326, height: 163, direction: 1, frame: 0, move: null },
   { x: 1152, y: 324, height: 177, direction: -1, frame: 3, move: null },
@@ -258,11 +260,11 @@ function readRecord() {
 
 function showSessionCard(card) {
   ui.curtain.hidden = card === null;
-  const screens = { welcome: "home", opening: "opening", results: "results" };
+  const screens = { welcome: "home", opening: "opening", results: "results", ranking: "ranking" };
   document.body.dataset.screen = screens[card] ?? "game";
   ui.typingConsole.hidden = card !== null && card !== "pauseCard";
   if (card !== "results") ui.confetti.replaceChildren();
-  for (const id of ["welcome", "opening", "pauseCard", "results"]) ui[id].hidden = id !== card;
+  for (const id of ["welcome", "opening", "pauseCard", "results", "ranking"]) ui[id].hidden = id !== card;
 }
 
 function updateTimer() {
@@ -272,10 +274,12 @@ function updateTimer() {
 }
 
 function openForBusiness() {
-  if (!art || !["ready", "finished"].includes(state.phase)) return;
+  if (!art || submissionBusy || !["ready", "finished"].includes(state.phase)) return;
   prepareBell();
   setCounterRows(1);
   completedRound = null;
+  ui.submitScore.disabled = true;
+  ui.submitStatus.textContent = "";
   Object.assign(state, {
     order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, cooked: 0, deliveryTime: null, deliveryPlaced: false,
     trouble: 0, mistakeTime: -Infinity, easing: null, correct: 0, misses: 0,
@@ -327,7 +331,12 @@ function finishRound() {
   if (state.phase !== "playing") return;
   advanceDelivery();
   state.phase = "finished";
-  completedRound = {};
+  completedRound = Object.freeze({
+    id: crypto.randomUUID(), period: monthPeriod().key, served: state.served,
+    correct: state.correct, misses: state.misses, elapsedMs: roundDuration,
+  });
+  ui.submitScore.disabled = state.served === 0;
+  ui.submitStatus.textContent = state.served ? "" : "料理を1さらとどけると、きろくをとうろくできます。";
   ui.key.disabled = true;
   ui.pause.hidden = true;
   ui.served.textContent = String(state.served).padStart(2, "0");
@@ -392,6 +401,13 @@ document.addEventListener("keydown", event => {
   else if (state.phase === "paused") resumeRound();
 });
 
+function monthPeriod(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit"}).formatToParts(date);
+  const year = parts.find(part => part.type === "year").value;
+  const month = parts.find(part => part.type === "month").value;
+  return { key: `${year}-${month}`, title: `${year}年${Number(month)}月ランキング` };
+}
+
 function normalizedName(value) {
   return String(value).normalize("NFKC").replace(/[\u0000-\u001f\u007f<>]/g, "").trim();
 }
@@ -403,6 +419,7 @@ try { playerName = localStorage.getItem(playerNameKey) || ""; } catch {}
 function renderPlayerName() {
   const label = playerName || "まだなし";
   ui.homeName.textContent = label;
+  ui.resultName.textContent = label;
 }
 
 function editPlayerName() {
@@ -412,6 +429,7 @@ function editPlayerName() {
 }
 
 ui.editHomeName.addEventListener("click", editPlayerName);
+ui.editResultName.addEventListener("click", editPlayerName);
 ui.cancelName.addEventListener("click", () => ui.nameDialog.close());
 ui.nameForm.addEventListener("submit", event => {
   event.preventDefault();
@@ -430,10 +448,11 @@ renderPlayerName();
 
 function refreshHomeBest() {
   const record = readRecord();
-  ui.homeBest.textContent = record ? `2分のベストきろく　${record.best}さら` : "";
+  ui.homeBest.textContent = record ? `ベストきろく　${record.best}さら` : "";
 }
 
 function goHome() {
+  if (submissionBusy) return;
   state.phase = "ready";
   state.deliveryTime = null;
   state.trouble = 0;
@@ -447,8 +466,110 @@ function goHome() {
   ui.start.focus();
 }
 
+async function rankingService() {
+  if (!window.kitchenRankingReady) throw new Error("準備中");
+  return await window.kitchenRankingReady;
+}
+
+let rankingRequest = 0;
+async function openRanking(from = "welcome") {
+  rankingReturn = from;
+  showSessionCard("ranking");
+  ui.rankingBack.focus();
+  const request = ++rankingRequest;
+  const period = monthPeriod();
+  ui.rankingTitle.textContent = period.title;
+  ui.rankingRows.replaceChildren();
+  ui.rankingStatus.classList.remove("error");
+  ui.rankingStatus.hidden = false;
+  ui.rankingStatus.textContent = "ランキングを読み込んでいます…";
+  ui.rankingReload.disabled = true;
+  try {
+    const service = await rankingService();
+    const result = await service.load(period.key);
+    if (request !== rankingRequest) return;
+    for (const [index, entry] of result.entries.entries()) {
+      const row = document.createElement("tr");
+      const mine = entry.uid === result.uid;
+      if (mine) row.className = "is-current";
+      const values = [String(index + 1), entry.name, `${entry.served}さら`, `${(entry.accuracy / 100).toFixed(1)}%`];
+      values.forEach((value, column) => {
+        const cell = document.createElement("td");
+        if (column === 0) {
+          const badge = document.createElement("span");
+          badge.className = "rank-number";
+          badge.textContent = value;
+          cell.append(badge);
+        } else {
+          cell.textContent = value;
+        }
+        if (mine && column === 1) {
+          const mark = document.createElement("span");
+          mark.className = "my-mark";
+          mark.textContent = "あなた";
+          cell.append(mark);
+        }
+        row.append(cell);
+      });
+      ui.rankingRows.append(row);
+    }
+    ui.rankingStatus.hidden = result.entries.length > 0;
+    ui.rankingStatus.textContent = "今月のきろくはまだありません。最初の料理人になろう！";
+  } catch (error) {
+    if (request !== rankingRequest) return;
+    ui.rankingStatus.classList.add("error");
+    ui.rankingStatus.textContent = error.message === "準備中"
+      ? "オンラインランキングは公開準備中です。営業とベストきろくの保存は使えます。"
+      : "ランキングを読み込めませんでした。通信を確認して再読み込みしてください。";
+  } finally {
+    if (request === rankingRequest) ui.rankingReload.disabled = false;
+  }
+}
+
+ui.openRanking.addEventListener("click", () => openRanking("welcome"));
+ui.resultRanking.addEventListener("click", () => openRanking("results"));
+ui.rankingReload.addEventListener("click", () => openRanking(rankingReturn));
+ui.rankingBack.addEventListener("click", () => {
+  rankingRequest++;
+  showSessionCard(rankingReturn);
+  (rankingReturn === "results" ? ui.resultRanking : ui.openRanking).focus();
+});
 ui.homeFromResult.addEventListener("click", goHome);
 ui.quit.addEventListener("click", goHome);
+ui.submitForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  const round = completedRound;
+  if (submissionBusy || !round || !round.served) return;
+  const name = playerName;
+  if (!name || Array.from(name).length > 8) {
+    ui.submitStatus.textContent = "「かえる」から、なまえを設定してください。";
+    ui.editResultName.focus();
+    return;
+  }
+  submissionBusy = true;
+  ui.submitScore.disabled = true;
+  ui.retry.disabled = true;
+  ui.homeFromResult.disabled = true;
+  ui.resultRanking.disabled = true;
+  ui.submitStatus.textContent = "ランキングにとうろくしています…";
+  try {
+    const service = await rankingService();
+    const outcome = await service.submit({...round, name});
+    ui.submitStatus.textContent = outcome === "saved"
+      ? "今月のベストきろくをとうろくしました！"
+      : "とうろく済みのベストきろくを残しました。";
+  } catch (error) {
+    ui.submitStatus.textContent = error.message === "準備中"
+      ? "ランキングの公開準備中です。この画面できろくを確認できます。"
+      : "とうろくできませんでした。通信を確認して、もう一度お試しください。";
+    ui.submitScore.disabled = false;
+  } finally {
+    submissionBusy = false;
+    ui.retry.disabled = false;
+    ui.homeFromResult.disabled = false;
+    ui.resultRanking.disabled = false;
+  }
+});
 refreshHomeBest();
 
 function reportMistake() {
@@ -908,7 +1029,7 @@ Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(im
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
   ui.status.textContent = "じゅんびができたよ！";
   ui.start.disabled = false;
-  ui.start.textContent = "開店する（2分）";
+  ui.start.textContent = "開店する";
   if (document.activeElement === document.body) ui.start.focus();
   showPrompt();
   requestAnimationFrame(timestamp => {

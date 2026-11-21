@@ -18,7 +18,7 @@
   --honey: #ffcd76;
 }
 body { margin: 0; color: var(--ink); background: #f5e6cc; font-family: "Yu Gothic UI", Meiryo, sans-serif; }
-main { width: min(calc(100% - 40px), 1320px, max(700px, calc((100svh - 244px) * var(--scene-scale, 2.14)))); margin: 0 auto; }
+main { width: min(calc(100% - 40px), 1320px, max(700px, calc((100svh - 264px) * var(--scene-scale, 2.14)))); margin: 0 auto; }
 header { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 58px; }
 h1 { margin: 0; color: var(--red); font-size: clamp(15px, 2vw, 23px); font-weight: 900; }
 .brand { color: var(--teal); font: 700 12px ui-monospace, monospace; letter-spacing: .12em; }
@@ -66,7 +66,7 @@ body[data-screen="home"] #kitchen, body[data-screen="home"] footer, body[data-sc
 #welcomeTitle { width: min(100%, 670px, 66svh); margin: 0; filter: drop-shadow(0 6px 5px #32170e40); }
 #welcomeTitle img { display: block; width: 100%; height: auto; }
 .home-menu { width: min(100%, 480px); }
-#welcome .card-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 9px; }
+#welcome .card-actions { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin: 0 0 9px; }
 #welcome .home-action { position: relative; min-height: 49px; padding: 8px 14px; border: 2px solid #ffde98; outline: 1px solid #4c291a; outline-offset: 2px; border-radius: 14px 14px 10px 10px; box-shadow: inset 0 -4px #0002, 0 4px 0 #30180e; color: #fff4d5; font-size: clamp(14px, 2vw, 22px); font-weight: 900; }
 #welcome .home-action::before, #welcome .home-action::after { content: ""; display: inline-block; width: 4px; height: 4px; vertical-align: middle; margin: 0 .45em; background: #ffd791; border-radius: 50%; }
 #welcome #start { background: #a83329; }
@@ -114,7 +114,7 @@ body[data-screen="results"] .curtain { border-radius: 18px; }
 
 
 
-.console { position: relative; display: grid; grid-template-columns: minmax(94px, 1fr) 2fr minmax(77px, 1fr); align-items: center; gap: 8px; min-height: 140px; padding: 11px 24px; background: var(--paper); border: 2px solid #b36b51; border-top: 0; border-radius: 0 0 15px 15px; }
+.console { position: relative; display: grid; grid-template-columns: minmax(94px, 1fr) 2fr minmax(77px, 1fr); align-items: center; gap: 8px; min-height: 160px; padding: 11px 24px; background: var(--paper); border: 2px solid #b36b51; border-top: 0; border-radius: 0 0 15px 15px; }
 .order { margin: 4px 0 8px; font-size: clamp(15px, 2vw, 22px); }
 .caption { color: var(--muted); font-size: 14px; font-weight: 800; }
 #stage { color: var(--teal); font-size: 16px; }
@@ -123,7 +123,7 @@ body[data-screen="results"] .curtain { border-radius: 18px; }
 #roman { margin-top: 3px; color: #775b51; font: bold clamp(16px, 2.5vw, 26px) ui-monospace, monospace; letter-spacing: .09em; overflow-wrap: anywhere; }
 #typed { color: var(--teal); }
 #next { color: var(--red); border-bottom: 2px solid var(--red); }
-#key { width: min(250px, 100%); margin-top: 6px; padding: 5px 8px; font-size: 16px; border: 1px solid #c7a78d; border-radius: 5px; background: #fffcf6; color: var(--ink); text-align: center; }
+#key { width: min(330px, 100%); margin-top: 15px; min-height: 43px; padding: 7px 10px; font-size: 18px; border: 1px solid #c7a78d; border-radius: 5px; background: #fffcf6; color: var(--ink); text-align: center; }
 #key:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
 #key.bad { background: #ffe2d8; outline-color: var(--red); }
 .count { text-align: right; white-space: nowrap; color: var(--red); font-size: 16px; }
@@ -182,6 +182,33 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
   #confetti { display: none; }
 }
 .console { position: sticky; bottom: 0; z-index: 2; }
+.submit-form { border-top: 2px dashed var(--line); margin-top: 9px; }
+#submitScore { margin-top: 8px; font-size: 13px; }
+.ranking-card { width: min(100%, 760px); height: min(505px, 100%); display: flex; flex-direction: column; text-align: left; border: 6px solid #93614a; }
+.ranking-heading, .ranking-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ranking-heading h2 { color: var(--teal); }
+.ranking-heading button, .ranking-footer button { flex-shrink: 0; }
+.ranking-scroll { overflow: auto; min-height: 70px; flex: 1; border: 1px solid var(--line); border-radius: 9px; background: #fffdf6; }
+.ranking-scroll table { width: 100%; border-collapse: collapse; }
+.ranking-scroll th { position: sticky; top: 0; background: #dfede3; color: #235b4f; font-size: 12px; text-align: left; }
+.ranking-scroll :is(th,td) { padding: 9px 13px; }
+.ranking-scroll td { border-bottom: 1px solid var(--line); }
+.ranking-scroll :is(th,td):nth-child(n+3) { text-align: right; }
+.ranking-scroll td:first-child { color: var(--red); font-weight: 900; width: 68px; }
+.rank-number { display: inline-grid; place-items: center; min-width: 32px; min-height: 29px; border-radius: 50%; border: 1px solid transparent; }
+tr:nth-child(1) .rank-number { background: #ffe19d; border-color: #ce9b45; color: #6c3d10; }
+tr:nth-child(2) .rank-number { background: #e5eff1; border-color: #a5bfc4; color: #304b55; }
+tr:nth-child(3) .rank-number { background: #f3d7bc; border-color: #c89572; color: #753e23; }
+.ranking-scroll tr.is-current { background: #e3f1e5; }
+.my-mark { color: var(--teal); font-size: 11px; margin-left: 6px; font-weight: 800; }
+.ranking-message { text-align: center; padding: 10px; }
+  .ranking-scroll :is(th,td) { padding: 7px 6px; }
+  .ranking-scroll td:first-child { width: auto; }
+#welcome #openRanking { background: #245b50; }
+#welcome #openRanking:hover { background: #347566; }
+body[data-screen="ranking"] #timer, body[data-screen="ranking"] footer { display: none; }
+body[data-screen="ranking"] #kitchen { min-height: min(570px, 78svh); object-fit: cover; border-radius: 18px; }
+body[data-screen="ranking"] .curtain { border-radius: 18px; }
 </style>
 </head>
 <body data-screen="home">
@@ -197,6 +224,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
         <div class="home-menu">
           <div class="card-actions">
             <button id="start" class="home-action" type="button" disabled>キッチンをじゅんび中…</button>
+            <button id="openRanking" class="home-action" type="button">ランキング</button>
           </div>
           <div class="nickname-row"><span><b>なまえ</b><span id="homeName">まだなし</span></span><button id="editHomeName" class="text-button" type="button" aria-label="なまえをかえる">かえる</button></div>
           <p id="homeStatus" class="form-status" role="status"></p>
@@ -220,8 +248,23 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
         <div><dt>打ち間違い</dt><dd id="resultMisses">0回</dd></div>
       </dl>
       <p id="comparison"></p>
-      <div class="card-actions"><button id="retry" type="button">もういちどあそぶ</button></div>
+      <form id="submitForm" class="submit-form">
+        <div class="nickname-row"><span><b>なまえ</b><span id="resultName">未設定</span></span><button id="editResultName" class="text-button" type="button" aria-label="なまえをかえる">かえる</button></div>
+        <button id="submitScore" type="submit" class="secondary">このきろくを登録</button>
+        <p class="hint">なまえと今月のベストきろくがランキングに出ます。</p>
+        <p id="submitStatus" class="form-status" role="status"></p>
+      </form>
+      <div class="card-actions"><button id="retry" type="button">もういちどあそぶ</button><button id="resultRanking" class="secondary" type="button">ランキング</button></div>
       <button id="homeFromResult" type="button" class="text-button">ホームへ</button>
+    </section>
+    <section id="ranking" class="session-card ranking-card" aria-labelledby="rankingTitle" hidden>
+      <div class="ranking-heading"><div><h2 id="rankingTitle">今月のランキング</h2></div><button id="rankingBack" type="button" class="secondary">戻る</button></div>
+      <p class="ranking-rule">お届けしたさらの数で競争。同じさらの数なら、正しく打てたわりあいが高い人が上位です。</p>
+      <div class="ranking-scroll" tabindex="0" aria-label="ランキング一覧">
+        <table><thead><tr><th scope="col">じゅんい</th><th scope="col">なまえ</th><th scope="col">料理</th><th scope="col">正しく打てたわりあい</th></tr></thead><tbody id="rankingRows"></tbody></table>
+        <p id="rankingStatus" class="ranking-message" role="status"></p>
+      </div>
+      <div class="ranking-footer"><p class="hint">日本時間で月ごとに更新・上位50人</p><button id="rankingReload" type="button" class="text-button">読みなおす</button></div>
     </section>
     <div id="confetti" aria-hidden="true"></div>
   </div></div>
@@ -243,6 +286,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
     <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">きめる</button></div>
   </form>
 </dialog>
-<script src="game.js?v=easy-words"></script>
+<script src="game.js?v=ranking-restored"></script>
+<script type="module" src="ranking.js?v=two-minute"></script>
 </body>
 </html>
