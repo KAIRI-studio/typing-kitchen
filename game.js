@@ -160,7 +160,6 @@ function stampOrder() {
   stampTimeout = setTimeout(() => { ui.stamp.hidden = true; }, 480);
 }
 let completedRound = null;
-let rankingReturn = "welcome";
 const chefs = [
   { x: 340, y: 326, height: 163, direction: 1, frame: 0, move: null },
   { x: 1152, y: 324, height: 177, direction: -1, frame: 3, move: null },
@@ -259,11 +258,11 @@ function readRecord() {
 
 function showSessionCard(card) {
   ui.curtain.hidden = card === null;
-  const screens = { welcome: "home", opening: "opening", results: "results", ranking: "ranking" };
+  const screens = { welcome: "home", opening: "opening", results: "results" };
   document.body.dataset.screen = screens[card] ?? "game";
   ui.typingConsole.hidden = card !== null && card !== "pauseCard";
   if (card !== "results") ui.confetti.replaceChildren();
-  for (const id of ["welcome", "opening", "pauseCard", "results", "ranking"]) ui[id].hidden = id !== card;
+  for (const id of ["welcome", "opening", "pauseCard", "results"]) ui[id].hidden = id !== card;
 }
 
 function updateTimer() {
@@ -328,11 +327,7 @@ function finishRound() {
   if (state.phase !== "playing") return;
   advanceDelivery();
   state.phase = "finished";
-  completedRound = Object.freeze({
-    id: crypto.randomUUID(), period: monthPeriod().key, served: state.served,
-    correct: state.correct, misses: state.misses, elapsedMs: roundDuration,
-    accuracy: state.correct + state.misses ? Math.round(state.correct / (state.correct + state.misses) * 10000) : 0,
-  });
+  completedRound = {};
   ui.key.disabled = true;
   ui.pause.hidden = true;
   ui.served.textContent = String(state.served).padStart(2, "0");
@@ -397,13 +392,6 @@ document.addEventListener("keydown", event => {
   else if (state.phase === "paused") resumeRound();
 });
 
-function monthPeriod(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", {timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit"}).formatToParts(date);
-  const year = parts.find(part => part.type === "year").value;
-  const month = parts.find(part => part.type === "month").value;
-  return { key: `${year}-${month}`, title: `${year}年${Number(month)}月ランキング` };
-}
-
 function normalizedName(value) {
   return String(value).normalize("NFKC").replace(/[\u0000-\u001f\u007f<>]/g, "").trim();
 }
@@ -459,74 +447,6 @@ function goHome() {
   ui.start.focus();
 }
 
-async function rankingService() {
-  if (!window.kitchenRankingReady) throw new Error("準備中");
-  return await window.kitchenRankingReady;
-}
-
-let rankingRequest = 0;
-async function openRanking(from = "welcome") {
-  rankingReturn = from;
-  showSessionCard("ranking");
-  ui.rankingBack.focus();
-  const request = ++rankingRequest;
-  const period = monthPeriod();
-  ui.rankingTitle.textContent = `${period.title}（旧3分版）`;
-  ui.rankingRows.replaceChildren();
-  ui.rankingStatus.classList.remove("error");
-  ui.rankingStatus.hidden = false;
-  ui.rankingStatus.textContent = "ランキングを読み込んでいます…";
-  ui.rankingReload.disabled = true;
-  try {
-    const service = await rankingService();
-    const result = await service.load(period.key);
-    if (request !== rankingRequest) return;
-    for (const [index, entry] of result.entries.entries()) {
-      const row = document.createElement("tr");
-      const mine = entry.uid === result.uid;
-      if (mine) row.className = "is-current";
-      const values = [String(index + 1), entry.name, `${entry.served}皿`, `${(entry.accuracy / 100).toFixed(1)}%`];
-      values.forEach((value, column) => {
-        const cell = document.createElement("td");
-        if (column === 0) {
-          const badge = document.createElement("span");
-          badge.className = "rank-number";
-          badge.textContent = value;
-          cell.append(badge);
-        } else {
-          cell.textContent = value;
-        }
-        if (mine && column === 1) {
-          const mark = document.createElement("span");
-          mark.className = "my-mark";
-          mark.textContent = "あなた";
-          cell.append(mark);
-        }
-        row.append(cell);
-      });
-      ui.rankingRows.append(row);
-    }
-    ui.rankingStatus.hidden = result.entries.length > 0;
-    ui.rankingStatus.textContent = "今月の記録はまだありません。最初の料理人になろう！";
-  } catch (error) {
-    if (request !== rankingRequest) return;
-    ui.rankingStatus.classList.add("error");
-    ui.rankingStatus.textContent = error.message === "準備中"
-      ? "オンラインランキングは公開準備中です。営業と自己ベストの保存は使えます。"
-      : "ランキングを読み込めませんでした。通信を確認して再読み込みしてください。";
-  } finally {
-    if (request === rankingRequest) ui.rankingReload.disabled = false;
-  }
-}
-
-ui.openRanking.addEventListener("click", () => openRanking("welcome"));
-ui.resultRanking.addEventListener("click", () => openRanking("results"));
-ui.rankingReload.addEventListener("click", () => openRanking(rankingReturn));
-ui.rankingBack.addEventListener("click", () => {
-  rankingRequest++;
-  showSessionCard(rankingReturn);
-  (rankingReturn === "results" ? ui.resultRanking : ui.openRanking).focus();
-});
 ui.homeFromResult.addEventListener("click", goHome);
 ui.quit.addEventListener("click", goHome);
 refreshHomeBest();
