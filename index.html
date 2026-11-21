@@ -121,10 +121,10 @@ footer { display: flex; justify-content: space-between; gap: 12px; padding: 8px 
 #stamp { position: absolute; right: 0; top: -28px; z-index: 1; padding: 3px 9px; color: var(--teal); border: 3px double currentColor; border-radius: 5px; background: var(--paper); font-weight: 900; transform: rotate(-8deg); pointer-events: none; }
 body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
 #opening { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; perspective: 1000px; }
-.door-leaf { position: absolute; inset: 0 auto 0 0; width: 50.1%; display: grid; grid-template-rows: 1.5fr 1fr; gap: clamp(8px, 2vw, 24px); padding: clamp(14px, 4.4vw, 52px); border: 5px solid #29352d; background: repeating-linear-gradient(90deg, #ffffff05 0 1px, transparent 1px 7px), linear-gradient(90deg, #35483b, #51634e 50%, #394c3e); box-shadow: inset 0 0 0 3px #76826a; backface-visibility: hidden; animation: open-door .84s cubic-bezier(.5,.05,.22,1) both; }
-.door-leaf span { border: 3px solid #29352d; box-shadow: 0 0 0 2px #78836b, inset 1px 2px 8px #24332a80; }
+.door-leaf { position: absolute; inset: 0 auto 0 0; width: 50.1%; display: grid; grid-template-rows: 1.5fr 1fr; gap: clamp(8px, 2vw, 24px); padding: clamp(14px, 4.4vw, 52px); border: 5px solid #5a2f1b; background: repeating-linear-gradient(88deg, #542b161d 0 1px, transparent 2px 7px, #ffd8a313 8px 10px, transparent 11px 19px), linear-gradient(90deg, #8c502f, #b87949 46%, #995b34); box-shadow: inset 0 0 0 3px #d39a63; backface-visibility: hidden; animation: open-door .84s cubic-bezier(.5,.05,.22,1) both; }
+.door-leaf span { border: 3px solid #5a2f1b; box-shadow: 0 0 0 2px #bb7d4b, inset 1px 2px 8px #42200f80; }
 .door-leaf span:first-child { background: linear-gradient(145deg, #f0c17e, #b77e47 56%, #785335); }
-.door-leaf span:nth-child(2) { background: #344738; }
+.door-leaf span:nth-child(2) { background: repeating-linear-gradient(89deg, #50251318 0 1px, transparent 2px 8px), linear-gradient(90deg, #874725, #a56338 48%, #95532c); }
 .door-leaf::after { content: ""; position: absolute; top: 55%; right: 4%; width: clamp(5px, 1vw, 11px); height: clamp(14px, 4vw, 44px); border-radius: 10px; background: linear-gradient(90deg, #805426, #e2bc70 55%, #9a7037); box-shadow: 2px 2px 3px #27241480; }
 .door-left { transform-origin: left; --swing: -102deg; }
 .door-right { inset: 0 0 0 auto; transform-origin: right; --swing: 102deg; }
