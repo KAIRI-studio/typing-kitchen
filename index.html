@@ -76,7 +76,6 @@ body[data-screen="home"] #kitchen, body[data-screen="home"] footer, body[data-sc
 #welcome .nickname-row { border: 0; justify-content: center; flex-wrap: wrap; padding: 0; }
 #welcome .nickname-row b, #welcome .hint { color: #573426; }
 #welcome .text-button { color: #fff2cf; background: #673c27; padding: 3px 8px; }
-#welcome #rankedStart { display: block; margin: 0 auto 8px; }
 #welcome .text-button:hover { background: #855136; }
 #welcome .hint, #welcome #homeStatus { margin: 3px 0 0; text-align: center; }
 #welcome #homeStatus { color: #8f2c1d; }
@@ -200,9 +199,8 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
         <div class="home-menu">
           <div class="card-actions">
             <button id="start" class="home-action" type="button" disabled>厨房を準備しています…</button>
-            <button id="openRanking" class="home-action" type="button">ランキング</button>
+            <button id="openRanking" class="home-action" type="button">過去のランキング</button>
           </div>
-          <button id="rankedStart" class="text-button" type="button" disabled>ランキングに挑戦（3分）</button>
           <div class="nickname-row"><span><b>なまえ</b><span id="homeName">未設定</span></span><button id="editHomeName" class="text-button" type="button" aria-label="なまえを変更">変更</button></div>
           <p id="homeStatus" class="form-status" role="status"></p>
           <p id="homeBest" class="hint"></p>
@@ -225,13 +223,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
         <div><dt>打ち間違い</dt><dd id="resultMisses">0回</dd></div>
       </dl>
       <p id="comparison"></p>
-      <form id="submitForm" class="submit-form">
-        <div class="nickname-row"><span><b>なまえ</b><span id="resultName">未設定</span></span><button id="editResultName" class="text-button" type="button" aria-label="なまえを変更">変更</button></div>
-        <button id="submitScore" type="submit" class="secondary">この記録を登録</button>
-        <p class="hint">公開するのはニックネームと記録です。月ごとの自己ベストを掲載します。</p>
-        <p id="submitStatus" class="form-status" role="status"></p>
-      </form>
-      <div class="card-actions"><button id="retry" type="button">もう一度あそぶ</button><button id="resultRanking" type="button" class="secondary">ランキングを見る</button></div>
+      <div class="card-actions"><button id="retry" type="button">もう一度あそぶ</button><button id="resultRanking" type="button" class="secondary">過去のランキング</button></div>
       <button id="homeFromResult" type="button" class="text-button">ホームへ</button>
     </section>
     <section id="ranking" class="session-card ranking-card" aria-labelledby="rankingTitle" hidden>
@@ -263,7 +255,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
     <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">保存</button></div>
   </form>
 </dialog>
-<script src="game.js?v=two-minute-counter"></script>
+<script src="game.js?v=two-minute-only"></script>
 <script type="module" src="ranking.js?v=online-monthly-1"></script>
 </body>
 </html>

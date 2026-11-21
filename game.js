@@ -14,10 +14,8 @@ const extraPrompts = [
   [[["にんじん", "ninjin", "ninzin"]], [["カレー", "kare-"]], [["ごはん", "gohan"]]],
   [[["たまねぎ", "tamanegi"]], [["フライパン", "furaipan"]], [["ソース", "so-su"]]],
 ];
-const shortDuration = 120000;
-const rankedDuration = 180000;
-let roundDuration = shortDuration;
-const recordKey = duration => duration === rankedDuration ? "typing-kitchen-round-v1" : "typing-kitchen-round-2min";
+const roundDuration = 120000;
+const recordKey = "typing-kitchen-round-2min";
 const everydayPrompts = [
   ["ねこ", "neko"], ["うさぎ", "usagi"], ["きつね", "kitsune"], ["ぺんぎん", "pengin"],
   ["えんぴつ", "enpitsu"], ["けしごむ", "keshigomu"], ["としょしつ", "toshoshitsu"], ["うんどうかい", "undoukai"],
@@ -47,7 +45,7 @@ function spellingOptions(prompt) {
 
 function choosePrompts(order, completed) {
   return orders[order].slice(1).map((original, stage) => {
-    if (roundDuration === shortDuration && stage !== completed % 3) {
+    if (stage !== completed % 3) {
       const word = everydayPrompts[(completed * 2 + (stage < completed % 3 ? stage : stage - 1)) % everydayPrompts.length];
       return spellingOptions(word);
     }
@@ -163,7 +161,6 @@ function stampOrder() {
 }
 let completedRound = null;
 let rankingReturn = "welcome";
-let submissionBusy = false;
 const chefs = [
   { x: 340, y: 326, height: 163, direction: 1, frame: 0, move: null },
   { x: 1152, y: 324, height: 177, direction: -1, frame: 3, move: null },
@@ -250,9 +247,9 @@ ui.key.addEventListener("input", () => {
 });
 ui.kitchen.addEventListener("click", () => ui.key.focus());
 
-function readRecord(duration = roundDuration) {
+function readRecord() {
   try {
-    const record = JSON.parse(localStorage.getItem(recordKey(duration)));
+    const record = JSON.parse(localStorage.getItem(recordKey));
     return record && Number.isInteger(record.last) && record.last >= 0
       && Number.isInteger(record.best) && record.best >= record.last ? record : null;
   } catch {
@@ -275,15 +272,11 @@ function updateTimer() {
   ui.timer.classList.toggle("urgent", state.remaining > 0 && state.remaining <= 30000);
 }
 
-function openForBusiness(duration = shortDuration) {
-  if (!art || submissionBusy || !["ready", "finished"].includes(state.phase)) return;
+function openForBusiness() {
+  if (!art || !["ready", "finished"].includes(state.phase)) return;
   prepareBell();
-  roundDuration = duration;
   setCounterRows(1);
   completedRound = null;
-  ui.submitForm.hidden = duration !== rankedDuration;
-  ui.submitScore.disabled = true;
-  ui.submitStatus.textContent = "";
   Object.assign(state, {
     order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, cooked: 0, deliveryTime: null, deliveryPlaced: false,
     trouble: 0, mistakeTime: -Infinity, easing: null, correct: 0, misses: 0,
@@ -340,8 +333,6 @@ function finishRound() {
     correct: state.correct, misses: state.misses, elapsedMs: roundDuration,
     accuracy: state.correct + state.misses ? Math.round(state.correct / (state.correct + state.misses) * 10000) : 0,
   });
-  ui.submitScore.disabled = state.served === 0;
-  ui.submitStatus.textContent = state.served ? "" : "料理を1皿お届けすると、ランキングに登録できます。";
   ui.key.disabled = true;
   ui.pause.hidden = true;
   ui.served.textContent = String(state.served).padStart(2, "0");
@@ -359,7 +350,7 @@ function finishRound() {
   showResultDishes();
   if (newBest && !reducedMotion.matches) celebrateBest();
   try {
-    localStorage.setItem(recordKey(roundDuration), JSON.stringify({ last: state.served, best }));
+    localStorage.setItem(recordKey, JSON.stringify({ last: state.served, best }));
   } catch {
     ui.comparison.textContent += "　このブラウザでは記録を保存できませんでした";
   }
@@ -393,9 +384,8 @@ function resumeRound() {
   ui.key.focus();
 }
 
-ui.start.addEventListener("click", () => openForBusiness(shortDuration));
-ui.rankedStart.addEventListener("click", () => openForBusiness(rankedDuration));
-ui.retry.addEventListener("click", () => openForBusiness(roundDuration));
+ui.start.addEventListener("click", openForBusiness);
+ui.retry.addEventListener("click", openForBusiness);
 ui.pause.addEventListener("click", pauseRound);
 ui.resume.addEventListener("click", resumeRound);
 document.addEventListener("visibilitychange", () => {
@@ -425,7 +415,6 @@ try { playerName = localStorage.getItem(playerNameKey) || ""; } catch {}
 function renderPlayerName() {
   const label = playerName || "未設定";
   ui.homeName.textContent = label;
-  ui.resultName.textContent = label;
 }
 
 function editPlayerName() {
@@ -435,7 +424,6 @@ function editPlayerName() {
 }
 
 ui.editHomeName.addEventListener("click", editPlayerName);
-ui.editResultName.addEventListener("click", editPlayerName);
 ui.cancelName.addEventListener("click", () => ui.nameDialog.close());
 ui.nameForm.addEventListener("submit", event => {
   event.preventDefault();
@@ -448,18 +436,16 @@ ui.nameForm.addEventListener("submit", event => {
   playerName = name;
   try { localStorage.setItem(playerNameKey, name); } catch {}
   renderPlayerName();
-  if (ui.submitStatus.textContent === "「変更」から、なまえを設定してください。") ui.submitStatus.textContent = "";
   ui.nameDialog.close();
 });
 renderPlayerName();
 
 function refreshHomeBest() {
-  const record = readRecord(shortDuration);
+  const record = readRecord();
   ui.homeBest.textContent = record ? `2分の自己ベスト　${record.best}皿` : "";
 }
 
 function goHome() {
-  if (submissionBusy) return;
   state.phase = "ready";
   state.deliveryTime = null;
   state.trouble = 0;
@@ -485,7 +471,7 @@ async function openRanking(from = "welcome") {
   ui.rankingBack.focus();
   const request = ++rankingRequest;
   const period = monthPeriod();
-  ui.rankingTitle.textContent = `${period.title}（3分）`;
+  ui.rankingTitle.textContent = `${period.title}（旧3分版）`;
   ui.rankingRows.replaceChildren();
   ui.rankingStatus.classList.remove("error");
   ui.rankingStatus.hidden = false;
@@ -543,40 +529,6 @@ ui.rankingBack.addEventListener("click", () => {
 });
 ui.homeFromResult.addEventListener("click", goHome);
 ui.quit.addEventListener("click", goHome);
-ui.submitForm.addEventListener("submit", async event => {
-  event.preventDefault();
-  const round = completedRound;
-  if (submissionBusy || !round || !round.served || round.elapsedMs !== rankedDuration) return;
-  const name = playerName;
-  if (!name || Array.from(name).length > 8) {
-    ui.submitStatus.textContent = "「変更」から、なまえを設定してください。";
-    ui.editResultName.focus();
-    return;
-  }
-  submissionBusy = true;
-  ui.submitScore.disabled = true;
-  ui.retry.disabled = true;
-  ui.homeFromResult.disabled = true;
-  ui.resultRanking.disabled = true;
-  ui.submitStatus.textContent = "ランキングに登録しています…";
-  try {
-    const service = await rankingService();
-    const outcome = await service.submit({...round, name});
-    ui.submitStatus.textContent = outcome === "saved"
-      ? "今月の自己ベストを登録しました！"
-      : "登録済みの自己ベストを残しました。";
-  } catch (error) {
-    ui.submitStatus.textContent = error.message === "準備中"
-      ? "ランキングの公開準備中です。この画面で記録を確認できます。"
-      : "登録できませんでした。通信を確認して、もう一度お試しください。";
-    ui.submitScore.disabled = false;
-  } finally {
-    submissionBusy = false;
-    ui.retry.disabled = false;
-    ui.homeFromResult.disabled = false;
-    ui.resultRanking.disabled = false;
-  }
-});
 refreshHomeBest();
 
 function reportMistake() {
@@ -1035,7 +987,6 @@ const files = ["kitchen", "characters", "food", "counter", "reactions"];
 Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(images => {
   art = Object.fromEntries(files.map((name, index) => [name, images[index]]));
   ui.status.textContent = "準備できました。営業をはじめよう";
-  ui.rankedStart.disabled = false;
   ui.start.disabled = false;
   ui.start.textContent = "開店する（2分）";
   if (document.activeElement === document.body) ui.start.focus();
