@@ -71,11 +71,13 @@ body[data-screen="home"] #kitchen, body[data-screen="home"] footer, body[data-sc
 #welcome .home-action::before, #welcome .home-action::after { content: ""; display: inline-block; width: 4px; height: 4px; vertical-align: middle; margin: 0 .45em; background: #ffd791; border-radius: 50%; }
 #welcome #start { background: #a83329; }
 #welcome #start:hover { background: #c34834; }
-#welcome .nickname-row { border: 0; justify-content: center; flex-wrap: wrap; padding: 0; }
+#welcome .nickname-row { border: 0; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 4px 0; font-size: clamp(17px, 1.35vw, 22px); font-weight: 800; }
+#welcome .nickname-row b { font-size: clamp(14px, 1vw, 17px); }
 #welcome .nickname-row b, #welcome .hint { color: #573426; }
-#welcome .text-button { color: #fff2cf; background: #673c27; padding: 3px 8px; }
+#welcome .text-button { color: #fff2cf; background: #673c27; min-height: 34px; padding: 5px 12px; font-size: 14px; }
 #welcome .text-button:hover { background: #855136; }
-#welcome .hint, #welcome #homeStatus { margin: 3px 0 0; text-align: center; }
+#welcome .hint, #welcome #homeStatus { margin: 4px 0 0; text-align: center; font-size: clamp(14px, 1.05vw, 17px); }
+#welcome #homeBest { font-weight: 800; }
 #welcome #homeStatus { color: #8f2c1d; }
 .nickname-row { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 3px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .nickname-row span { min-width: 0; overflow-wrap: anywhere; }
