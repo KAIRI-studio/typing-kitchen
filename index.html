@@ -149,10 +149,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
 .doorway::before { right: 100%; }
 .doorway::after { left: 100%; }
 .door-leaf { position: absolute; inset: 0 auto 0 0; width: calc(50% - 1px); backface-visibility: hidden; animation: open-door .84s cubic-bezier(.5,.05,.22,1) both; }
-.door-panel { position: absolute; inset: 0; --door-profile: polygon(0 25%, 7% 25%, 14% 24%, 21% 22.5%, 28% 20%, 35% 16.5%, 42% 12.5%, 49% 8.5%, 56% 5.3%, 63% 2.8%, 70% 1.2%, 78% .4%, 88% 0, 100% 0, 100% 100%, 0 100%); clip-path: var(--door-profile); background: repeating-linear-gradient(89deg, #461e0d20 0 1px, transparent 2px 8px, #ffe1ae22 9px 10px, transparent 11px 21px), linear-gradient(95deg, #915431, #be8556 65%, #985630); box-shadow: inset 0 -3px #63361e, inset -3px 0 #743d22; }
-.door-panel::before, .door-panel::after { content: ""; position: absolute; clip-path: var(--door-profile); }
-.door-panel::before { inset: 4.5% 8% 5.5%; background: #63361e; }
-.door-panel::after { inset: 5.3% 8.8% 6.3%; background: repeating-linear-gradient(90deg, #5a2c171a 0 1px, transparent 2px 8px), repeating-linear-gradient(90deg, #61341960 0 1px, transparent 2px 20%), linear-gradient(90deg, #874b29, #ad7045 80%, #925636); }
+.door-panel { display: block; width: 100%; height: 100%; object-fit: fill; }
 .door-left { transform-origin: left; --swing: -102deg; }
 .door-right { inset: 0 0 0 auto; transform-origin: right; --swing: 102deg; }
 .door-right .door-panel { transform: scaleX(-1); }
@@ -209,7 +206,7 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
         </div>
       </div>
     </section>
-    <div id="opening" aria-hidden="true" hidden><div class="opening-haze"></div><div class="doorway"><div class="door-leaf door-left"><div class="door-panel"></div></div><div class="door-leaf door-right"><div class="door-panel"></div></div></div></div>
+    <div id="opening" aria-hidden="true" hidden><div class="opening-haze"></div><div class="doorway"><div class="door-leaf door-left"><img class="door-panel" src="assets/diner-swing-door.webp" alt=""></div><div class="door-leaf door-right"><img class="door-panel" src="assets/diner-swing-door.webp" alt=""></div></div></div>
     <section id="pauseCard" class="session-card" aria-labelledby="pauseTitle" hidden>
       <h2 id="pauseTitle">ひと休み</h2><p>準備ができたら営業を再開しよう。</p>
       <button id="resume" type="button">営業を再開</button>
