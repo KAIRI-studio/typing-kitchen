@@ -51,18 +51,35 @@ button:disabled { opacity: .6; cursor: default; }
 .form-status { color: var(--teal); font-weight: 700; }
 .form-status:empty, .hint:empty { display: none; }
 .form-status.error, .ranking-message.error { color: #992c23; }
+body[data-screen="home"] { background: #43251a; }
+body[data-screen="home"] main { width: 100%; max-width: none; }
+body[data-screen="home"] header { position: absolute; top: 0; right: 0; z-index: 2; min-height: 0; padding: 13px clamp(12px, 3vw, 34px); }
+body[data-screen="home"] header h1 { position: absolute; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap; }
+body[data-screen="home"] .brand { color: #392622; background: #fff8e8eb; border-radius: 4px; padding: 6px 7px; }
 body[data-screen="home"] .curtain { position: relative; padding: 0; display: block; background: transparent; }
 body[data-screen="home"] #kitchen, body[data-screen="home"] footer, body[data-screen="ranking"] footer, body[data-screen="results"] footer { display: none; }
-#welcome { width: 100%; display: grid; grid-template-columns: .88fr 1.12fr; padding: 0; text-align: left; border: 1px solid #bba58b; background: #fff8e9; box-shadow: 0 14px 32px #653d231c; overflow: hidden; }
-.welcome-copy { padding: clamp(22px, 3.7vw, 56px); align-self: center; min-width: 0; }
-#welcomeTitle { color: #902d26; font-size: clamp(36px, 5.2vw, 69px); line-height: 1.02; font-weight: 900; letter-spacing: -.045em; margin: 8px 0 16px; }
-#welcome .card-actions { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 20px; }
-#welcome .card-actions button { min-height: 44px; }
-#welcome .card-actions .secondary { background: transparent; border-color: #b0bfb1; }
-#welcome .card-actions .secondary:hover { background: #e1efe4; }
-.home-eyebrow { color: var(--teal); font-weight: 800; letter-spacing: .13em; }
-.home-art { display: grid; place-items: center; min-width: 0; background: #52392b; }
-.home-art img { display: block; width: 100%; height: auto; }
+#welcome { position: relative; isolation: isolate; display: grid; width: 100%; min-height: 100svh; max-height: none; border: 0; border-radius: 0; box-shadow: none; padding: 0; overflow: hidden; color: #fff8e8; background: #43251a; }
+.home-art { position: absolute; inset: 0; z-index: -2; }
+.home-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 57%; }
+#welcome::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, #351b13 0%, #351b13dd 10%, #351b1300 32%); pointer-events: none; }
+.welcome-copy { display: flex; flex-direction: column; justify-content: space-between; align-items: center; width: 100%; padding: clamp(52px, 8svh, 80px) 14px 16px; gap: 20px; }
+.home-titleboard { align-self: flex-start; margin-left: clamp(9px, 4vw, 62px); text-align: center; padding: 10px clamp(15px, 2.2vw, 34px) 13px; color: #942e24; background: #fff2cb; border: 3px solid #a73729; outline: 2px solid #fff2cb; outline-offset: 2px; border-radius: 32% 32% 14% 14% / 22% 22% 16% 16%; box-shadow: 0 5px 0 #56291e65; transform: rotate(-3deg); }
+#welcomeTitle { color: inherit; font-size: clamp(27px, 4.3vw, 63px); line-height: 1.02; font-weight: 900; letter-spacing: -.055em; margin: 0; text-shadow: 1px 2px #eac68b; }
+#welcome .home-eyebrow { margin: 0 0 4px; color: #255c50; font-size: clamp(10px, 1.2vw, 16px); font-weight: 900; letter-spacing: .12em; }
+.home-menu { width: min(100%, 585px); margin-top: auto; }
+#welcome .card-actions { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin: 0 0 9px; }
+#welcome .home-action { position: relative; min-height: 49px; padding: 8px 14px; border: 2px solid #ffde98; outline: 1px solid #4c291a; outline-offset: 2px; border-radius: 14px 14px 10px 10px; box-shadow: inset 0 -4px #0002, 0 4px 0 #30180e; color: #fff4d5; font-size: clamp(14px, 2vw, 22px); font-weight: 900; }
+#welcome .home-action::before, #welcome .home-action::after { content: ""; display: inline-block; width: 4px; height: 4px; vertical-align: middle; margin: 0 .45em; background: #ffd791; border-radius: 50%; }
+#welcome #start { background: #a83329; }
+#welcome #start:hover { background: #c34834; }
+#welcome #openRanking { background: #245b50; }
+#welcome #openRanking:hover { background: #347566; }
+#welcome .nickname-row { border: 0; justify-content: center; flex-wrap: wrap; padding: 0; }
+#welcome .nickname-row b, #welcome .hint { color: #f2d8b0; }
+#welcome .text-button { color: #fff2cf; background: #673c27; padding: 3px 8px; }
+#welcome .text-button:hover { background: #855136; }
+#welcome .hint, #welcome #homeStatus { margin: 3px 0 0; text-align: center; }
+#welcome #homeStatus { color: #ffd791; }
 .nickname-row { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 3px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .nickname-row span { min-width: 0; overflow-wrap: anywhere; }
 .nickname-row b { color: var(--muted); font-size: 12px; margin-right: 8px; }
@@ -119,7 +136,8 @@ tr:nth-child(3) .rank-number { background: #f3d7bc; border-color: #c89572; color
 footer { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; color: var(--muted); font-size: 12px; }
 #status.trouble { color: var(--red); font-weight: 850; }
 #stamp { position: absolute; right: 0; top: -28px; z-index: 1; padding: 3px 9px; color: var(--teal); border: 3px double currentColor; border-radius: 5px; background: var(--paper); font-weight: 900; transform: rotate(-8deg); pointer-events: none; }
-body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
+body[data-screen="opening"] #kitchen { visibility: hidden; }
+body[data-screen="opening"] .curtain { padding: 0; background: radial-gradient(ellipse at 50% 43%, #745137, #382119 78%); }
 #opening { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
 .doorway { position: absolute; inset: 15% 22% 10%; perspective: 1000px; }
 .doorway::before, .doorway::after { content: ""; position: absolute; top: 18%; bottom: -2%; width: 2.5%; z-index: -1; border: 1px solid #60351e; background: linear-gradient(90deg, #683a22, #b27649 45%, #855130); }
@@ -144,12 +162,13 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
   .session-controls { gap: 6px; }
   body:is([data-screen="game"], [data-screen="opening"]) .session-controls .brand { display: none; }
   #timer { font-size: 16px; padding: 4px 6px; }
-  #welcome { grid-template-columns: 1fr; }
-  .home-art { grid-row: 1; }
-  .home-art img { max-height: 52svh; object-fit: contain; }
-  .welcome-copy { padding: 16px; }
+  .welcome-copy { padding-top: 55px; }
+  .home-titleboard { align-self: center; margin-left: 0; }
   #welcomeTitle br { display: none; }
-  #welcomeTitle { font-size: clamp(27px, 8vw, 49px); }
+  #welcomeTitle { font-size: clamp(23px, 7vw, 43px); }
+  .home-art { inset: 0; background: #43251a; }
+  .home-art img { object-fit: contain; object-position: center 48%; }
+  #welcome .home-action { padding-inline: 5px; }
   .console { min-height: 88px; padding-inline: 7px; grid-template-columns: minmax(61px, 1fr) 2fr minmax(53px, .8fr); }
   #stage { font-size: 10px; }
   .curtain { padding: 8px; }
@@ -172,20 +191,20 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
   <canvas id="kitchen" width="1440" height="672" aria-label="奥から仕込み、加熱、盛り付けの調理台が並ぶ厨房"></canvas>
   <div id="curtain" class="curtain">
     <section id="welcome" class="session-card" aria-labelledby="welcomeTitle">
+      <div class="home-art"><img src="assets/diner-pop-home.webp" width="1240" height="930" fetchpriority="high" alt="洋食店のコックたちと、オムライスを受け取るウェイター"></div>
       <div class="welcome-copy">
-      <p class="home-eyebrow">どうぶつ洋食店</p>
-      <h2 id="welcomeTitle">タイピング<br>キッチン</h2>
-      <p>3分間で何皿お届けできるかな？</p>
-      <div class="nickname-row"><span><b>なまえ</b><span id="homeName">未設定</span></span><button id="editHomeName" class="text-button" type="button" aria-label="なまえを変更">変更</button></div>
-      <p id="homeStatus" class="form-status" role="status"></p>
-      <div class="card-actions">
-        <button id="start" type="button" disabled>厨房を準備しています…</button>
-        <button id="openRanking" type="button" class="secondary">ランキング</button>
+        <div class="home-titleboard"><p class="home-eyebrow">どうぶつ洋食店</p><h2 id="welcomeTitle">タイピング<br>キッチン</h2></div>
+        <div class="home-menu">
+          <div class="card-actions">
+            <button id="start" class="home-action" type="button" disabled>厨房を準備しています…</button>
+            <button id="openRanking" class="home-action" type="button">ランキング</button>
+          </div>
+          <div class="nickname-row"><span><b>なまえ</b><span id="homeName">未設定</span></span><button id="editHomeName" class="text-button" type="button" aria-label="なまえを変更">変更</button></div>
+          <p id="homeStatus" class="form-status" role="status"></p>
+          <p id="homeBest" class="hint"></p>
+          <p class="hint">PCの半角英字キーでプレイ</p>
+        </div>
       </div>
-      <p id="homeBest" class="hint"></p>
-      <p class="hint">PCの半角英字キーで遊べます。Enterは不要です。</p>
-      </div>
-      <div class="home-art"><img src="assets/diner-counter.webp" width="1200" height="900" fetchpriority="high" alt="洋食店のコックと、オムライスを運ぶウェイター"></div>
     </section>
     <div id="opening" aria-hidden="true" hidden><div class="doorway"><div class="door-leaf door-left"><div class="door-panel"></div></div><div class="door-leaf door-right"><div class="door-panel"></div></div></div></div>
     <section id="pauseCard" class="session-card" aria-labelledby="pauseTitle" hidden>
