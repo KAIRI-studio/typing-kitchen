@@ -238,23 +238,13 @@ function updateTimer() {
 function openForBusiness() {
   if (!art || submissionBusy || !["ready", "finished"].includes(state.phase)) return;
   prepareBell();
-  state.phase = "opening";
-  ui.timer.textContent = "3:00";
-  ui.timer.classList.remove("urgent");
-  showSessionCard("opening");
-  if (reducedMotion.matches) startRound();
-  else setTimeout(startRound, 650);
-}
-
-function startRound() {
-  if (state.phase !== "opening") return;
   completedRound = null;
   ui.submitScore.disabled = true;
   ui.submitStatus.textContent = "";
   Object.assign(state, {
     order: firstOrder, step: 0, typed: "", served: 0, stageTime: 0, deliveryTime: null,
     trouble: 0, mistakeTime: -Infinity, easing: null, correct: 0, misses: 0,
-    remaining: roundDuration, phase: "playing", lastFrame: performance.now(),
+    remaining: roundDuration, phase: "opening", lastFrame: null,
     prompts: choosePrompts(firstOrder, 0),
   });
   time = 0;
@@ -265,12 +255,24 @@ function startRound() {
   ui.stamp.hidden = true;
   ui.status.classList.remove("trouble");
   ui.served.textContent = "00";
+  showPrompt();
+  updateTimer();
+  if (reducedMotion.matches) {
+    startRound();
+  } else {
+    showSessionCard("opening");
+    setTimeout(startRound, 840);
+  }
+}
+
+function startRound() {
+  if (state.phase !== "opening") return;
+  state.phase = "playing";
+  state.lastFrame = performance.now();
   ui.status.textContent = "営業開始！　ローマ字で料理をつくろう";
   ui.key.disabled = false;
   ui.pause.hidden = false;
   showSessionCard(null);
-  showPrompt();
-  updateTimer();
   ui.key.focus();
   if (document.hidden) pauseRound();
 }
