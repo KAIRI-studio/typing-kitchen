@@ -248,7 +248,6 @@ function openForBusiness() {
 
 function startRound() {
   if (state.phase !== "opening") return;
-  savePlayerName(ui.playerName.value);
   completedRound = null;
   ui.submitScore.disabled = true;
   ui.submitStatus.textContent = "";
@@ -299,7 +298,6 @@ function finishRound() {
     correct: state.correct, misses: state.misses, elapsedMs: roundDuration,
     accuracy: state.correct + state.misses ? Math.round(state.correct / (state.correct + state.misses) * 10000) : 0,
   });
-  ui.resultName.value = ui.playerName.value;
   ui.submitScore.disabled = state.served === 0;
   ui.submitStatus.textContent = state.served ? "" : "料理を1皿お届けすると、ランキングに登録できます。";
   ui.key.disabled = true;
@@ -377,17 +375,40 @@ function normalizedName(value) {
   return String(value).normalize("NFKC").replace(/[\u0000-\u001f\u007f<>]/g, "").trim();
 }
 
-function savePlayerName(value) {
-  const name = normalizedName(value);
-  if (Array.from(name).length > 8) {
-    ui.nameStatus.textContent = "ニックネームは8文字までにしてください。ランキング登録時に変更できます。";
-    return "";
-  }
-  ui.nameStatus.textContent = "";
-  ui.playerName.value = name;
-  try { localStorage.setItem("typing-kitchen-player-name-v1", name); } catch {}
-  return name;
+const playerNameKey = "typing-kitchen-player-name-v1";
+let playerName = "";
+try { playerName = localStorage.getItem(playerNameKey) || ""; } catch {}
+
+function renderPlayerName() {
+  const label = playerName || "未設定";
+  ui.homeName.textContent = label;
+  ui.resultName.textContent = label;
 }
+
+function editPlayerName() {
+  ui.playerName.value = playerName;
+  ui.nameStatus.textContent = "";
+  ui.nameDialog.showModal();
+}
+
+ui.editHomeName.addEventListener("click", editPlayerName);
+ui.editResultName.addEventListener("click", editPlayerName);
+ui.cancelName.addEventListener("click", () => ui.nameDialog.close());
+ui.nameForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const name = normalizedName(ui.playerName.value);
+  if (Array.from(name).length > 8) {
+    ui.nameStatus.textContent = "ニックネームは8文字までです。";
+    ui.playerName.focus();
+    return;
+  }
+  playerName = name;
+  try { localStorage.setItem(playerNameKey, name); } catch {}
+  renderPlayerName();
+  if (ui.submitStatus.textContent === "「変更」から、なまえを設定してください。") ui.submitStatus.textContent = "";
+  ui.nameDialog.close();
+});
+renderPlayerName();
 
 function refreshHomeBest() {
   const record = readRecord();
@@ -479,18 +500,16 @@ ui.rankingBack.addEventListener("click", () => {
 });
 ui.homeFromResult.addEventListener("click", goHome);
 ui.quit.addEventListener("click", goHome);
-ui.playerName.addEventListener("change", () => savePlayerName(ui.playerName.value));
 ui.submitForm.addEventListener("submit", async event => {
   event.preventDefault();
   const round = completedRound;
   if (submissionBusy || !round || !round.served) return;
-  const name = normalizedName(ui.resultName.value);
+  const name = playerName;
   if (!name || Array.from(name).length > 8) {
-    ui.submitStatus.textContent = "ニックネームを1〜8文字で入れてください。";
-    ui.resultName.focus();
+    ui.submitStatus.textContent = "「変更」から、なまえを設定してください。";
+    ui.editResultName.focus();
     return;
   }
-  savePlayerName(name);
   submissionBusy = true;
   ui.submitScore.disabled = true;
   ui.retry.disabled = true;
@@ -515,7 +534,6 @@ ui.submitForm.addEventListener("submit", async event => {
     ui.resultRanking.disabled = false;
   }
 });
-try { ui.playerName.value = localStorage.getItem("typing-kitchen-player-name-v1") || ""; } catch {}
 refreshHomeBest();
 
 function reportMistake() {
@@ -925,18 +943,6 @@ const foodFrames = [[3, 3, 184, 102], [193, 3, 184, 135], [383, 3, 184, 103], [3
 
 const reactionFrames = [[4, 4, 209, 252], [264, 4, 216, 252], [524, 4, 165, 252]];
 
-function paintHomeCrew() {
-  const surface = ui.crewArt.getContext("2d");
-  surface.fillStyle = "#6b8d7260";
-  surface.beginPath();
-  surface.ellipse(300, 317, 246, 26, 0, 0, Math.PI * 2);
-  surface.fill();
-  drawSprite(art.characters, characterFrames[3], 472, 307, 168, 231, -1, 1, surface);
-  drawSprite(art.characters, characterFrames[0], 127, 310, 168, 222, 1, 1, surface);
-  drawSprite(art.characters, characterFrames[8], 299, 332, 175, 238, -1, 1, surface);
-  drawSprite(art.food, foodFrames[2], 252, 239, 112, 66, 1, .5, surface);
-}
-
 function showResultDishes() {
   const surface = ui.resultDishes.getContext("2d");
   surface.clearRect(0, 0, ui.resultDishes.width, ui.resultDishes.height);
@@ -972,7 +978,6 @@ Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(im
   ui.status.textContent = "準備できました。営業をはじめよう";
   ui.start.disabled = false;
   ui.start.textContent = "開店する";
-  paintHomeCrew();
   if (document.activeElement === document.body) ui.start.focus();
   showPrompt();
   requestAnimationFrame(timestamp => {
@@ -981,6 +986,6 @@ Promise.all(files.map(name => loadImage(`assets/${name}.webp?v=chibi`))).then(im
   });
 }).catch(() => {
   ui.status.textContent = "厨房の画像を読み込めませんでした。ページを開き直してください。";
-  ui.nameStatus.textContent = ui.status.textContent;
+  ui.homeStatus.textContent = ui.status.textContent;
   ui.start.textContent = "ページを開き直してください";
 });
