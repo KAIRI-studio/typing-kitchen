@@ -314,8 +314,27 @@ body[data-screen="game"] footer { padding-inline: 5px; }
   }
 }
 @media (min-width: 761px) and (max-height: 780px) {
-  body[data-screen="game"] main, body[data-screen="opening"] main { width: min(calc(100% - 24px), calc((100svh - 234px) * var(--scene-scale, 2.14))); }
   .console { min-height: 142px; padding-block: 8px; }
+}
+body:is([data-screen="game"], [data-screen="opening"]) main {
+  width: min(calc(100% - 24px), 1320px);
+}
+body:is([data-screen="game"], [data-screen="opening"]) .scene {
+  aspect-ratio: 1440 / 672;
+  max-height: max(160px, calc(100svh - 252px));
+  background: #343838;
+  border: 3px solid #793f30;
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
+}
+body:is([data-screen="game"], [data-screen="opening"]) .scene #kitchen {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
 }
 </style>
 </head>
@@ -400,7 +419,7 @@ body[data-screen="game"] footer { padding-inline: 5px; }
     <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">きめる</button></div>
   </form>
 </dialog>
-<script src="game.js?v=fit-and-results"></script>
+<script src="game.js?v=steady-console"></script>
 <script type="module" src="ranking.js?v=two-minute"></script>
 </body>
 </html>

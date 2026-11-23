@@ -225,6 +225,7 @@ document.addEventListener("keydown", event => {
   const letter = /^[a-z-]$/i.test(event.key);
   if (!letter && event.key !== "Backspace") return;
   event.preventDefault();
+  if (letter && event.repeat) return;
   updateClock(performance.now());
   if (state.phase !== "playing" || state.cooked >= maxDishes) return;
   if (document.activeElement !== ui.key) ui.key.focus({preventScroll: true});
@@ -237,7 +238,6 @@ document.addEventListener("keydown", event => {
   const candidate = state.typed + event.key.toLowerCase();
   const [, ...options] = state.prompts[state.step];
   if (!options.some(option => option.startsWith(candidate))) {
-    if (event.repeat) return;
     state.misses++;
     reportMistake();
     ui.key.classList.add("bad");
@@ -270,8 +270,7 @@ document.addEventListener("keydown", event => {
   }
   showDeliveryQueue();
   if (state.cooked === maxDishes) {
-    ui.status.textContent = "ぜんぶの料理ができたよ！";
-    ui.prompt.textContent = "料理ができたよ！";
+    showFinalDeliveryStatus();
     ui.typed.textContent = ui.next.textContent = ui.rest.textContent = "";
     ui.key.value = "";
     ui.key.disabled = true;
@@ -428,7 +427,8 @@ function resumeRound() {
   state.lastFrame = performance.now();
   ui.key.disabled = state.cooked >= maxDishes;
   ui.pause.hidden = false;
-  ui.status.textContent = "つづけよう！";
+  if (state.cooked === maxDishes) showFinalDeliveryStatus();
+  else ui.status.textContent = "つづけよう！";
   showSessionCard(null);
   ui.key.focus();
 }
@@ -711,8 +711,8 @@ function drawChef(chef, active) {
   const height = chef.height + (y - 320) * .12;
   shadow(x, y - 3, chef.frame === 0 ? 34 : 28);
   const worried = stress >= (active ? .85 : 1.75);
-  if (worried && (!moving || Math.floor(time / 92) % 2 === 0)) {
-    const hop = Math.sin(time / (stress >= 2 ? 62 : 101)) * (stress + 1);
+  if (worried && (reducedMotion.matches || !moving || Math.floor(time / 92) % 2 === 0)) {
+    const hop = reducedMotion.matches ? 0 : Math.sin(time / (stress >= 2 ? 62 : 101)) * (stress + 1);
     drawSprite(art.reactions, reactionFrames[chef.frame === 0 ? 0 : 1], x, y - Math.abs(hop), 190, height, moving ? walkingDirection * chef.direction : 1, 1);
   } else if (moving || active) {
     const cycle = Math.floor(duration / (stress >= 2 ? 83 : 130)) % 4;
@@ -720,7 +720,7 @@ function drawChef(chef, active) {
     const direction = moving ? walkingDirection * chef.direction : 1;
     ctx.save();
     ctx.translate(x, y);
-    if (active && !moving) {
+    if (active && !moving && !reducedMotion.matches) {
       const motion = Math.sin(duration / 118);
       ctx.rotate(chef.direction * motion * .026);
       ctx.scale(1, 1 + motion * .013);
@@ -774,10 +774,10 @@ function drawTable(index, delivery) {
   const strength = Math.min(3, state.trouble);
   const hit = 1 - progress(time - state.mistakeTime, 460);
   const oscillation = Math.sin(time / (strength ? 63 : 108));
-  const shake = oscillation * (index === 1 ? 2.5 + strength * 2 : strength * (2 + hit * 3));
+  const shake = reducedMotion.matches ? 0 : oscillation * (index === 1 ? 2.5 + strength * 2 : strength * (2 + hit * 3));
   const x = station.x + shake;
   // Keep the entrance motion inside the front edge of the tabletop.
-  const y = station.y + (index > 0 ? (1 - amount) * 2 : 0);
+  const y = station.y + (index > 0 && !reducedMotion.matches ? (1 - amount) * 2 : 0);
   ctx.save();
   if (index > 0) ctx.globalAlpha = amount;
   drawFood(state.order, index, x, y, station.width, station.height);
@@ -809,11 +809,14 @@ function noodle(x, y, scale, color) {
 }
 
 function drawStationMishap(x, y, step, level, hit) {
+  // Use a steady illustration when motion is reduced.
+  const effectTime = reducedMotion.matches ? 0 : time;
+  if (reducedMotion.matches) hit = 0;
   const dish = mishaps[state.order];
   ctx.save();
   const count = 2 + level * 2;
   for (let i = 0; i < count; i++) {
-    const phase = (time / 750 + i * .173) % 1;
+    const phase = (effectTime / 750 + i * .173) % 1;
     const side = i % 2 === 0 ? 1 : -1;
     const spread = 45 + (i % 4) * 8 + (level - 1) * 5 + hit * 13;
     const px = x + side * (27 + phase * spread);
@@ -844,6 +847,9 @@ function drawStationMishap(x, y, step, level, hit) {
 }
 
 function drawCookingTrouble(x, y, level, hit) {
+  // Use a steady illustration when motion is reduced.
+  const effectTime = reducedMotion.matches ? 0 : time;
+  if (reducedMotion.matches) hit = 0;
   const curry = state.order === 2;
   const potX = x - 17;
   const potY = y + (curry ? -6 : 4);
@@ -859,7 +865,7 @@ function drawCookingTrouble(x, y, level, hit) {
   }
   if (curry && level) {
     for (let i = 0; i < 4 * level + 1; i++) {
-      const age = (time / 590 + i * .193) % 1;
+      const age = (effectTime / 590 + i * .193) % 1;
       const side = i % 2 === 0 ? -1 : 1;
       const dropX = potX + side * (9 + i % 4 * 4 + age * (level === 1 ? 7 : 52 + hit * 18));
       const dropY = potY - Math.sin(age * Math.PI) * (12 + level * 9 + hit * 10) + age * (level > 1 ? 18 : 0);
@@ -874,7 +880,7 @@ function drawCookingTrouble(x, y, level, hit) {
   if (state.order === 0 && level) {
     ctx.globalAlpha = .78;
     for (let i = 0; i < level + 2; i++) {
-      const age = (time / 450 + i * .24) % 1;
+      const age = (effectTime / 450 + i * .24) % 1;
       const side = i % 2 === 0 ? 1 : -1;
       fleck(potX + side * (15 + age * 23), potY - Math.sin(age * Math.PI) * (8 + 5 * level), 2.4, 3.7, side * .5, "#eab65f");
     }
@@ -882,13 +888,13 @@ function drawCookingTrouble(x, y, level, hit) {
   if (state.order === 1 && level) {
     ctx.globalAlpha = .89;
     for (let i = 0; i < level; i++) {
-      const age = (time / 520 + i * .29) % 1;
+      const age = (effectTime / 520 + i * .29) % 1;
       noodle(potX + 12 + i * 13 + age * 22, potY - 23 * Math.sin(age * Math.PI), 1, "#da9456");
     }
   }
   const puffs = level === 0 ? 3 : curry ? level + 1 : level * 3;
   for (let i = 0; i < puffs; i++) {
-    const age = (time / 940 + i / puffs) % 1;
+    const age = (effectTime / 940 + i / puffs) % 1;
     const spread = 7 + level * 8;
     const smokeX = potX + Math.sin(i * 3.7 + age * 3) * spread * age;
     const smokeY = potY - 8 - age * (29 + level * 19);
@@ -900,12 +906,14 @@ function drawCookingTrouble(x, y, level, hit) {
 }
 
 function drawSweat(x, y, height, direction, stress) {
+  // Use a steady illustration when motion is reduced.
+  const effectTime = reducedMotion.matches ? 0 : time;
   if (stress < 4) return;
   const count = stress >= 5 ? 4 : 2;
-  const burst = 1 - progress(time - state.mistakeTime, 350);
+  const burst = reducedMotion.matches ? 0 : 1 - progress(time - state.mistakeTime, 350);
   ctx.save();
   for (let i = 0; i < count; i++) {
-    const phase = (time / 540 + i / count) % 1;
+    const phase = (effectTime / 540 + i / count) % 1;
     const side = i % 3 === 2 ? -direction : direction;
     const size = (i % 2 ? 6 : 8.5) + burst * 2;
     const px = x + side * (height * .27 + phase * (18 + burst * 7));
@@ -932,6 +940,12 @@ const normalDelivery = { approach: 760, carry: 1580, place: 1830, reset: 2330 };
 const rushDelivery = { approach: 500, carry: 1080, place: 1250, reset: 1510 };
 let deliveryPhases = normalDelivery;
 
+function showFinalDeliveryStatus() {
+  const delivered = state.served === maxDishes;
+  ui.prompt.textContent = delivered ? `${maxDishes}さら達成！` : "さいごのおとどけ中";
+  ui.status.textContent = delivered ? "営業時間が終わると、けっかが出るよ。" : "ぜんぶの料理ができたよ！";
+}
+
 function showDeliveryQueue() {
   const waiting = state.cooked - state.served;
   ui.deliveryQueue.textContent = waiting ? `おとどけ中 ${waiting}さら` : "";
@@ -956,6 +970,7 @@ function advanceDelivery() {
       state.served++;
       showDeliveryQueue();
       ui.served.textContent = String(state.served).padStart(2, "0");
+      if (state.served === maxDishes) showFinalDeliveryStatus();
       if (state.phase === "playing" && state.remaining > 0) ringBell();
     }
     if (elapsed < deliveryPhases.reset) return;
@@ -966,7 +981,7 @@ function advanceDelivery() {
 }
 
 function waiterPose(elapsed) {
-  if (elapsed === null && crewStress() >= 2.2) {
+  if (elapsed === null && crewStress() >= 2.2 && !reducedMotion.matches) {
     const phase = time / 185;
     return { x: waiterHome.x + Math.sin(phase) * 52, y: waiterHome.y, direction: Math.cos(phase) > 0 ? 1 : -1, walk: true, hands: false };
   }
