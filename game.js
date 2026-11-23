@@ -39,6 +39,8 @@ const extraPrompts = [
   [[["たまねぎ", "tamanegi"]], [["フライパン", "furaipan"]], [["ソース", "so-su"]]],
 ];
 const roundDuration = 120000;
+// This is also the maximum accepted by the existing monthly leaderboard.
+const maxDishes = 41;
 const recordKey = "typing-kitchen-round-2min";
 const everydayPrompts = [
   ["ねこ", "neko"], ["うさぎ", "usagi"], ["きつね", "kitsune"], ["ぺんぎん", "pengin"],
@@ -58,7 +60,7 @@ const everydayPrompts = [
 function spellingOptions(prompt) {
   const [label, ...spellings] = prompt;
   const options = new Set(spellings);
-  for (const [first, second] of [["shi", "si"], ["chi", "ti"], ["tsu", "tu"], ["ji", "zi"]]) {
+  for (const [first, second] of [["shi", "si"], ["chi", "ti"], ["tsu", "tu"], ["ji", "zi"], ["sha", "sya"], ["shu", "syu"], ["sho", "syo"], ["cha", "tya"], ["chu", "tyu"], ["cho", "tyo"], ["ja", "zya"], ["ju", "zyu"], ["jo", "zyo"]]) {
     for (const spelling of [...options]) {
       options.add(spelling.replaceAll(first, second));
       options.add(spelling.replaceAll(second, first));
@@ -214,15 +216,19 @@ function showRoman() {
   ui.key.value = state.typed;
 }
 
-ui.key.addEventListener("keydown", event => {
-  if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+document.addEventListener("keydown", event => {
+  if (!art || state.phase !== "playing" || event.defaultPrevented || event.isComposing
+    || event.ctrlKey || event.altKey || event.metaKey) return;
+  if (event.target !== ui.key && event.target instanceof HTMLElement
+    && (event.target.isContentEditable || event.target.matches("input, textarea, select"))) return;
   const letter = /^[a-z-]$/i.test(event.key);
   if (!letter && event.key !== "Backspace") return;
   event.preventDefault();
-  if (!art || state.phase !== "playing") return;
   updateClock(performance.now());
-  if (state.phase !== "playing") return;
+  if (state.phase !== "playing" || state.cooked >= maxDishes) return;
+  if (document.activeElement !== ui.key) ui.key.focus({preventScroll: true});
   if (event.key === "Backspace") {
+    if (state.typed) state.correct--;
     state.typed = state.typed.slice(0, -1);
     showRoman();
     return;
@@ -257,7 +263,19 @@ ui.key.addEventListener("keydown", event => {
     return;
   }
   state.cooked++;
-  state.deliveryTime ??= time;
+  if (state.deliveryTime === null) {
+    state.deliveryTime = time;
+    deliveryPhases = normalDelivery;
+  }
+  showDeliveryQueue();
+  if (state.cooked === maxDishes) {
+    ui.status.textContent = "ぜんぶの料理ができたよ！";
+    ui.prompt.textContent = "料理ができたよ！";
+    ui.typed.textContent = ui.next.textContent = ui.rest.textContent = "";
+    ui.key.value = "";
+    ui.key.disabled = true;
+    return;
+  }
   state.order = (firstOrder + state.cooked) % orders.length;
   state.prompts = choosePrompts(state.order, state.cooked);
   state.step = 0;
@@ -318,6 +336,7 @@ function openForBusiness() {
   ui.stamp.hidden = true;
   ui.status.classList.remove("trouble");
   ui.served.textContent = "00";
+  showDeliveryQueue();
   showPrompt();
   updateTimer();
   if (reducedMotion.matches) {
@@ -405,7 +424,7 @@ function resumeRound() {
   if (state.phase !== "paused") return;
   state.phase = "playing";
   state.lastFrame = performance.now();
-  ui.key.disabled = false;
+  ui.key.disabled = state.cooked >= maxDishes;
   ui.pause.hidden = false;
   ui.status.textContent = "つづけよう！";
   showSessionCard(null);
@@ -899,7 +918,15 @@ function drawSweat(x, y, height, direction, stress) {
   ctx.restore();
 }
 
-const deliveryPhases = { approach: 930, carry: 1970, place: 2270, reset: 2910 };
+const normalDelivery = { approach: 760, carry: 1580, place: 1830, reset: 2330 };
+const rushDelivery = { approach: 500, carry: 1080, place: 1250, reset: 1510 };
+let deliveryPhases = normalDelivery;
+
+function showDeliveryQueue() {
+  const waiting = state.cooked - state.served;
+  ui.deliveryQueue.textContent = waiting ? `おとどけ中 ${waiting}さら` : "";
+  ui.deliveryQueue.hidden = !waiting;
+}
 
 function deliveringOrder() {
   return (firstOrder + deliveryIndex()) % orders.length;
@@ -917,12 +944,14 @@ function advanceDelivery() {
     if (elapsed >= deliveryPhases.place && !state.deliveryPlaced) {
       state.deliveryPlaced = true;
       state.served++;
+      showDeliveryQueue();
       ui.served.textContent = String(state.served).padStart(2, "0");
       if (state.phase === "playing" && state.remaining > 0) ringBell();
     }
     if (elapsed < deliveryPhases.reset) return;
     state.deliveryTime = state.served < state.cooked ? state.deliveryTime + deliveryPhases.reset : null;
     state.deliveryPlaced = false;
+    deliveryPhases = state.cooked - state.served >= 2 ? rushDelivery : normalDelivery;
   }
 }
 
