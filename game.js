@@ -386,7 +386,8 @@ function finishRound() {
   ui.served.textContent = String(state.served).padStart(2, "0");
   ui.resultServed.textContent = `${state.served}さら`;
   const total = state.correct + state.misses;
-  ui.resultAccuracy.textContent = total ? `${Math.round(state.correct / total * 100)}%` : "—";
+  const accuracy = Math.min(99.9, state.correct / total * 100);
+  ui.resultAccuracy.textContent = !total ? "—" : state.misses ? `${accuracy.toFixed(1)}%` : "100%";
   ui.resultMisses.textContent = `${state.misses}回`;
   const previous = readRecord();
   const best = Math.max(previous?.best ?? 0, state.served);

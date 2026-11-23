@@ -184,11 +184,11 @@ body[data-screen="opening"] .curtain { padding: 0; background: transparent; }
 .console { position: sticky; bottom: 0; z-index: 2; }
 .submit-form { border-top: 2px dashed var(--line); margin-top: 9px; }
 #submitScore { margin-top: 8px; font-size: 13px; }
-.ranking-card { width: min(100%, 760px); height: min(505px, 100%); display: flex; flex-direction: column; text-align: left; border: 6px solid #93614a; }
+.ranking-card { width: min(100%, 760px); display: flex; flex-direction: column; text-align: left; border: 6px solid #93614a; }
 .ranking-heading, .ranking-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .ranking-heading h2 { color: var(--teal); }
 .ranking-heading button, .ranking-footer button { flex-shrink: 0; }
-.ranking-scroll { overflow: auto; min-height: 70px; flex: 1; border: 1px solid var(--line); border-radius: 9px; background: #fffdf6; }
+.ranking-scroll { overflow: auto; min-height: 0; max-height: 330px; flex: 0 1 auto; border: 1px solid var(--line); border-radius: 9px; background: #fffdf6; }
 .ranking-scroll table { width: 100%; border-collapse: collapse; }
 .ranking-scroll th { position: sticky; top: 0; background: #dfede3; color: #235b4f; font-size: 12px; text-align: left; }
 .ranking-scroll :is(th,td) { padding: 9px 13px; }
@@ -296,8 +296,22 @@ body[data-screen="game"] footer { padding-inline: 5px; }
   .order-ticket { padding-inline: 5px; }
   #deliveryQueue { font-size: 11px; }
 }
-@media (min-width: 761px) and (max-aspect-ratio: 17/10) {
-  body:not([data-mobile="true"]) .home-art img { object-position: left center; }
+@media (min-width: 761px) {
+  body:not([data-mobile="true"])[data-screen="home"] .curtain {
+    display: grid;
+    min-height: 100svh;
+    background: linear-gradient(#f9ebd2, #f9ebd2 42%, #b7734a 75%, #a9623d);
+  }
+  body:not([data-mobile="true"]) #welcome {
+    width: min(100%, 200svh);
+    min-height: 0;
+    aspect-ratio: 1774 / 887;
+  }
+  body:not([data-mobile="true"]) .home-art img { object-fit: contain; object-position: center; }
+  body:not([data-mobile="true"]) .welcome-copy {
+    padding-block: clamp(9px, 2svh, 26px);
+    gap: clamp(10px, 2.7svh, 32px);
+  }
 }
 @media (min-width: 761px) and (max-height: 780px) {
   body[data-screen="game"] main, body[data-screen="opening"] main { width: min(calc(100% - 24px), calc((100svh - 234px) * var(--scene-scale, 2.14))); }
@@ -386,7 +400,7 @@ body[data-screen="game"] footer { padding-inline: 5px; }
     <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">きめる</button></div>
   </form>
 </dialog>
-<script src="game.js?v=tabletop-fit"></script>
+<script src="game.js?v=fit-and-results"></script>
 <script type="module" src="ranking.js?v=two-minute"></script>
 </body>
 </html>
