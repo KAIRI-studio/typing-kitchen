@@ -84,9 +84,9 @@ const trialOrders = new Map([["omurice", 0], ["napolitan", 1], ["curry", 2], ["h
 const firstOrder = trialOrders.get(new URLSearchParams(window.location.search).get("order")) ?? 0;
 const stages = ["じゅんび", "火を通す", "もりつけ"];
 const stations = [
-  { x: 728, y: 118, width: 132, height: 75, labelX: 524, labelY: 131 },
-  { x: 728, y: 223, width: 151, height: 90, labelX: 503, labelY: 238 },
-  { x: 728, y: 365, width: 140, height: 85, labelX: 480, labelY: 376 },
+  { x: 728, y: 108, width: 132, height: 70, labelX: 524, labelY: 131 },
+  { x: 728, y: 227, width: 151, height: 80, labelX: 503, labelY: 238 },
+  { x: 728, y: 359, width: 140, height: 85, labelX: 480, labelY: 376 },
 ];
 // Table silhouettes follow the artwork, including the front rails and legs.
 const tableLayers = [
@@ -775,7 +775,8 @@ function drawTable(index, delivery) {
   const oscillation = Math.sin(time / (strength ? 63 : 108));
   const shake = oscillation * (index === 1 ? 2.5 + strength * 2 : strength * (2 + hit * 3));
   const x = station.x + shake;
-  const y = station.y + (index > 0 ? (1 - amount) * 8 : 0);
+  // Keep the entrance motion inside the front edge of the tabletop.
+  const y = station.y + (index > 0 ? (1 - amount) * 2 : 0);
   ctx.save();
   if (index > 0) ctx.globalAlpha = amount;
   drawFood(state.order, index, x, y, station.width, station.height);
