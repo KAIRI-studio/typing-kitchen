@@ -232,13 +232,70 @@ body[data-mobile="true"] #welcome .card-actions { grid-template-columns: 1fr; }
 body[data-mobile="true"][data-screen="ranking"] .scene { min-height: min(620px, calc(100svh - 60px)); }
 body[data-mobile="true"][data-screen="ranking"] #kitchen { position: absolute; inset: 0; height: 100%; min-height: 0; object-fit: contain; }
 body[data-mobile="true"][data-screen="ranking"] .ranking-card { min-height: 0; }
-.order-ticket { justify-self: start; min-width: min(100%, 138px); padding: 10px 13px; border-left: 3px solid #b85434; border-bottom: 1px dashed #c4a688; background: #fffdf2; }
-.order-ticket .caption { color: #9e442d; letter-spacing: .08em; }
+.console {
+  grid-template-columns: minmax(119px, 1fr) minmax(0, 2.5fr) minmax(100px, 1fr);
+  gap: clamp(6px, 1.1vw, 16px);
+  padding: 9px clamp(8px, 1.4vw, 20px);
+  border-color: #b58b6b;
+  background: linear-gradient(#f7e7ce, #fff5e2);
+}
+.order-ticket {
+  width: 100%;
+  min-width: 0;
+  padding: 9px clamp(8px, 1.35vw, 16px);
+  border: 1px solid #d2b292;
+  border-top: 3px solid #ad412c;
+  border-bottom: 1px dashed #aa8361;
+  border-radius: 6px 6px 2px 2px;
+  background: #fffaf0;
+  box-shadow: 0 2px 5px #6f432016;
+}
+.order-ticket .caption { color: #963a28; }
+.order-ticket .order { margin: 4px 0 8px; overflow-wrap: anywhere; }
+.order-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 6px; }
+.order-progress span { height: 4px; border-radius: 2px; background: #e9dac3; }
+.order-progress[data-step="1"] span:first-child,
+.order-progress[data-step="2"] span:nth-child(2),
+.order-progress[data-step="3"] span:nth-child(3) { background: #bf5637; }
+.order-progress[data-step="2"] span:first-child,
+.order-progress[data-step="3"] span:nth-child(-n+2) { background: #3f7a66; }
+#stage { font-size: clamp(12px, 1.25vw, 16px); }
+.entry {
+  padding: 9px 11px 10px;
+  border: 1px solid #143a31;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #234e40, #153b33);
+  box-shadow: inset 0 0 0 1px #e2efdc24;
+  color: #fff3da;
+}
+#roman { color: #e6e6d0; }
+#typed { color: #a8e8cb; }
+#next { color: #ffd28a; border-color: #ffd28a; }
+.entry #key { margin-top: 9px; background: #fffaf0; box-shadow: inset 0 2px 0 #ead7bd55; }
+.entry #key:focus { outline-color: #f1c787; }
+.entry #key.bad { background: #ffe2d8; outline-color: #f69a80; }
+#stamp { top: -12px; right: 7px; color: #285e4e; }
+.count { padding-inline: 3px; text-align: center; }
 #deliveryQueue { display: block; margin-top: 4px; color: #73513d; font-size: 13px; font-weight: 700; }
-.entry #key { background: #fffdf5; box-shadow: inset 0 2px 0 #ead7bd55; }
-.entry #key.bad { background: #ffe2d8; }
-#results .results-grid > div { border-bottom: 1px dashed #ba9777; }
+body[data-screen="game"] footer { padding-inline: 5px; }
+#results, .ranking-card, #pauseCard { border: 1px solid #bd9976; box-shadow: 0 8px 30px #28160e45; }
+#results { border-top: 5px solid #ab442e; background: linear-gradient(#fff5de, #fffaf0); }
 #results #resultTitle { color: #843923; }
+#resultDishes { margin-top: 6px; }
+#results .results-grid > div { border: 1px solid #dec4a6; border-bottom: 1px dashed #ba9777; background: #fffaf0; }
+#results .results-grid > div:first-child { border-color: #c4865d; background: #f7e0bb; }
+#results .results-grid > div:not(:first-child) dd { color: #245747; }
+#results #comparison.best { width: fit-content; margin-inline: auto; padding: 3px 12px; border-radius: 5px; background: #e2eee1; }
+.ranking-card { border-top: 5px solid #285e4e; }
+.ranking-scroll th { color: #fff5de; background: #285e4e; }
+.ranking-scroll tr:nth-child(even):not(.is-current) { background: #fcf4e4; }
+#pauseCard { background: #fff4dc; border-top: 5px solid #285e4e; }
+@media (max-width: 760px) {
+  .console { grid-template-columns: minmax(64px, 1fr) minmax(0, 2.1fr) minmax(58px, .9fr); gap: 5px; }
+  .entry { padding-inline: 6px; }
+  .order-ticket { padding-inline: 5px; }
+  #deliveryQueue { font-size: 11px; }
+}
 @media (min-width: 761px) and (max-aspect-ratio: 17/10) {
   body:not([data-mobile="true"]) .home-art img { object-position: left center; }
 }
@@ -312,11 +369,11 @@ body[data-mobile="true"][data-screen="ranking"] .ranking-card { min-height: 0; }
     <div id="confetti" aria-hidden="true"></div>
   </div></div>
   <section id="typingConsole" class="console" hidden aria-label="タイピング">
-    <div class="order-ticket"><div class="caption">注文</div><h2 class="order" id="order"></h2><strong id="stage"></strong></div>
+    <div class="order-ticket"><div class="caption">ご注文</div><h2 class="order" id="order"></h2><div class="order-progress" id="orderProgress" aria-hidden="true"><span></span><span></span><span></span></div><strong id="stage"></strong></div>
     <div class="entry"><span id="stamp" aria-hidden="true" hidden>OK!</span><h2 id="prompt"></h2><div id="roman" aria-hidden="true"><span id="typed"></span><span id="next"></span><span id="rest"></span></div>
       <input id="key" aria-label="ローマ字を打つところ" placeholder="ローマ字を打とう" autocomplete="off" spellcheck="false" inputmode="none" disabled>
     </div>
-    <div class="count"><div class="caption">とどけた数</div><strong id="served">00</strong> さら<span id="deliveryQueue" hidden></span></div>
+    <div class="count"><div class="caption">とどけた料理</div><strong id="served">00</strong> さら<span id="deliveryQueue" hidden></span></div>
   </section>
   <footer><span id="status" role="status">キッチンをじゅんび中…</span><span>パソコンの英字キーで打とう</span></footer>
 </main>
@@ -329,7 +386,7 @@ body[data-mobile="true"][data-screen="ranking"] .ranking-card { min-height: 0; }
     <div class="card-actions"><button id="cancelName" type="button" class="secondary">キャンセル</button><button type="submit">きめる</button></div>
   </form>
 </dialog>
-<script src="game.js?v=order-ticket"></script>
+<script src="game.js?v=diner-finish"></script>
 <script type="module" src="ranking.js?v=two-minute"></script>
 </body>
 </html>

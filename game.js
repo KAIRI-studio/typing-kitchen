@@ -202,6 +202,7 @@ const chefStations = [
 
 function showPrompt() {
   ui.order.textContent = orders[state.order][0];
+  ui.orderProgress.dataset.step = String(state.step + 1);
   ui.stage.textContent = `${state.step + 1} / 3　${stages[state.step]}`;
   ui.prompt.textContent = state.prompts[state.step][0];
   showRoman();
@@ -743,11 +744,18 @@ function drawTable(index, delivery) {
   ctx.restore();
 
   const active = index === state.step;
-  ctx.fillStyle = active ? "rgba(38,32,26,.9)" : "rgba(35,39,41,.75)";
-  ctx.fillRect(station.labelX, station.labelY - 16, 88, 23);
-  ctx.fillStyle = active ? "#ffd29a" : "#e3dfd6";
+  const { labelX, labelY } = station;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(labelX, labelY - 16, 88, 23, 4);
+  else ctx.rect(labelX, labelY - 16, 88, 23);
+  ctx.fillStyle = active ? "#fff0d1" : "#243c35";
+  ctx.fill();
+  ctx.strokeStyle = active ? "#be643d" : "#ffffff66";
+  ctx.lineWidth = active ? 2 : 1;
+  ctx.stroke();
+  ctx.fillStyle = active ? "#8f3827" : "#fff4dc";
   ctx.font = "bold 13px 'Yu Gothic UI', sans-serif";
-  ctx.fillText(`0${index + 1}  ${stages[index]}`, station.labelX + 7, station.labelY);
+  ctx.fillText(`0${index + 1}  ${stages[index]}`, labelX + 7, labelY);
 
   if (index === 2 && delivery !== null && delivery < deliveryPhases.approach) {
     drawPlatedDish(deliveringOrder(), passPlate.x, passPlate.y);
