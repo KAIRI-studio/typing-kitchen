@@ -337,6 +337,12 @@ body:is([data-screen="game"], [data-screen="opening"]) .scene #kitchen {
   object-fit: contain;
 }
 </style>
+<meta name="description" content="ローマ字を打って料理を届ける小学生向けの無料タイピングゲーム。パソコン専用。">
+<style>
+a.title-guide{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:32px;padding:4px 10px;border-radius:8px;font-size:13px;font-weight:650;line-height:1.35;text-align:center;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+a.title-guide:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+#welcome .title-guide{margin-top:8px;background:#fff4dc;color:#593624;border:1px solid #a36e4f}
+</style>
 </head>
 <body data-screen="home">
 <main>
@@ -363,6 +369,7 @@ body:is([data-screen="game"], [data-screen="opening"]) .scene #kitchen {
           <p id="homeStatus" class="form-status" role="status"></p>
           <p id="homeBest" class="hint"></p>
           <p id="keyboardHint" class="hint">ローマ字を3問打つと1さら。2分で何さら作れるかな？</p>
+          <a class="title-guide" href="/castor/typing-kitchen.html">あそびかた・学べること</a>
         </div>
       </div>
     </section>
